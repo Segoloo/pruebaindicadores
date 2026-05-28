@@ -412,7 +412,7 @@ function _indSlaChart(id, rows, field) {
   _mkChart(id, 'doughnut', ['Dentro SLA', 'Fuera SLA'], [
     {
       data: [data.si, data.no],
-      backgroundColor: ['#00825A', '#00825A'],
+      backgroundColor: ['#00825A', '#DFFF61'],
       borderColor: 'rgba(13,12,11,0.8)',
       borderWidth: 2
     }
@@ -843,8 +843,8 @@ function _renderDetailTableOnly(tab) {
         if (c.isSLA) {
           const upperVal = v.toString().toUpperCase().trim();
           const isOk = upperVal === 'SI' || upperVal === 'CUMPLE';
-          const color = isOk ? '#00825A' : '#00825A';
-          const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(0,130,90,.08)';
+          const color = isOk ? '#00825A' : '#DFFF61';
+          const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(223,255,97,.08)';
           return `<td><span class="status-pill" style="color:${color};background:${bg};border:1px solid ${color}33;padding:3px 8px;border-radius:6px;font-weight:700;font-family:'JetBrains Mono',monospace;">${v}</span></td>`;
         }
         if (c.key === 'ESTADO') {
@@ -1424,8 +1424,8 @@ function _renderWizardTableOnly() {
         if (c.isSLA) {
           const upperVal = v.toString().toUpperCase().trim();
           const isOk = upperVal === 'SI' || upperVal === 'CUMPLE';
-          const color = isOk ? '#00825A' : '#00825A';
-          const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(0,130,90,.08)';
+          const color = isOk ? '#00825A' : '#DFFF61';
+          const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(223,255,97,.08)';
           return `<td><span class="status-pill" style="color:${color};background:${bg};border:1px solid ${color}33;padding:3px 8px;border-radius:6px;font-weight:700;font-family:'JetBrains Mono',monospace;">${v}</span></td>`;
         }
         if (c.key === 'ESTADO') {
@@ -1545,7 +1545,7 @@ function renderIndCierres() {
       _kpiCard('Exitosos', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'cierres') +
       _kpiCard('No Localizados', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'cierres') +
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'cierres') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#00825A', '⚠️', 'cierres') +
+      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'cierres') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'cierres');
   }
 
@@ -1623,7 +1623,7 @@ function renderIndPapeleria() {
       _kpiCard('Exitosas', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'papeleria') +
       _kpiCard('No Localizadas', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'papeleria') +
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'papeleria') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#00825A', '⚠️', 'papeleria') +
+      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'papeleria') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'papeleria');
   }
 
@@ -1723,7 +1723,7 @@ function renderIndOtrasOC() {
       _kpiCard('Exitosas', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'otras-oc') +
       _kpiCard('No Localizadas', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'otras-oc') +
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'otras-oc') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#00825A', '⚠️', 'otras-oc') +
+      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'otras-oc') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'otras-oc');
   }
 
@@ -1795,7 +1795,7 @@ function renderIndImplementacion() {
     _kpiCard('Cerradas', _indFmt(bd.length), _indPct(bd.length, total), '#B0F2AE', '✅', 'implementacion') +
     _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'implementacion') +
     _kpiCard('Cumple SLA', _indFmt(cumpleSLA), _indPct(cumpleSLA, total), '#00825A', '🎯', 'implementacion') +
-    _kpiCard('Incumple SLA', _indFmt(noSLA), _indPct(noSLA, total), '#00825A', '⚠️', 'implementacion');
+    _kpiCard('Incumple SLA', _indFmt(noSLA), _indPct(noSLA, total), '#DFFF61', '⚠️', 'implementacion');
 
   // Por Tipo de Solicitud
   const byTipo = _countBy(todos, 'TIPO DE SOLICITUD');
@@ -1858,7 +1858,7 @@ function renderIndIncidentes() {
     _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'incidentes') +
     _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'incidentes') +
     _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'incidentes') +
-    _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#00825A', '⚠️', 'incidentes') +
+    _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'incidentes') +
     _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'incidentes');
 
   // Por Grupo Falla
@@ -2151,8 +2151,8 @@ function _showRowDetail(row) {
 
       if (isSLA) {
         const isOk = valStr.toUpperCase() === 'SI' || valStr.toUpperCase() === 'CUMPLE';
-        const color = isOk ? '#00825A' : '#00825A';
-        const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(0,130,90,.08)';
+        const color = isOk ? '#00825A' : '#DFFF61';
+        const bg = isOk ? 'rgba(0,130,90,.08)' : 'rgba(223,255,97,.08)';
         displayVal = `<span style="color:${color};background:${bg};border:1px solid ${color}33;padding:3px 8px;border-radius:6px;font-weight:700;font-family:'JetBrains Mono',monospace;">${valStr}</span>`;
       } else if (isEstado) {
         displayVal = `<span class="status-pill ${indStatusClass(valStr)}">${valStr}</span>`;
