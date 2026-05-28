@@ -1367,8 +1367,8 @@ window.openKpiWizard = function (tab, label) {
     if (normLabel.includes('TOTAL')) kpiRows = todos;
     else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
     else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
+    else if (normLabel.includes('INCUMPLE') || normLabel.includes('FUERA') || normLabel === 'NO CUMPLE SLA') kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO');
     else if (normLabel.includes('CUMPLE') || normLabel.includes('DENTRO')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('INCUMPLE') || normLabel.includes('FUERA')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO');
     else if (normLabel.includes('CAUSAL')) kpiRows = todos.filter(r => {
       const v = (r['PRIMER CAUSAL  DE INCUMPLIMIENTO'] || r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
       return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
