@@ -2042,7 +2042,7 @@ function renderIndImplementacion() {
   _simpleTable('ind-impl-table-tec', _topN(byTec, 8), 'Técnico', total);
 
   // Forma de Atención: Visita Técnica vs Soporte Telefónico
-  _formaAtencionChart('ind-impl-chart-forma', todos, 'TIPO DE ATENCIÓN');
+  _formaAtencionChart('ind-impl-chart-forma', todos, 'TIPO DE TRAYECTO');
 }
 
 // ══════════════════════════════════════════════════════════════════
