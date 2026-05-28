@@ -405,6 +405,70 @@ function _slaRow(rows, field) {
   return { si, no };
 }
 
+// ─── SLA AJUSTADO: excluye USUARIOS y FACTOR_EXTERNO del denominador ─────────
+const _FACTORES_EXTERNOS = ['USUARIOS', 'FACTOR_EXTERNO'];
+
+function _slaAjustado(rows, slaField, respField) {
+  const sinExt = rows.filter(r => {
+    const v = (r[respField] || '').toString().toUpperCase().trim();
+    return !_FACTORES_EXTERNOS.includes(v);
+  });
+  const cumple = sinExt.filter(r => (r[slaField] || '').toString().toUpperCase() === 'SI').length;
+  const base = sinExt.length;
+  return { cumple, base, pct: _indPct(cumple, base) };
+}
+
+// Cumplimiento SLA filtrado sólo a LINEACOM o LARED
+function _slaPorResponsable(rows, slaField, respField, respVal) {
+  const sub = rows.filter(r => (r[respField] || '').toString().toUpperCase().trim() === respVal);
+  const cumple = sub.filter(r => (r[slaField] || '').toString().toUpperCase() === 'SI').length;
+  return { cumple, base: sub.length, pct: _indPct(cumple, sub.length) };
+}
+
+// Gráfica horizontal de responsables de incumplimiento
+function _responsableChart(id, rows, respField, label) {
+  const raw = _countBy(
+    rows.filter(r => {
+      const v = (r[respField] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL';
+    }),
+    respField
+  );
+  const entries = _topN(raw, 8);
+  if (!entries.length) return;
+  const COLOR_RESP = {
+    'LARED': '#B0F2AE',
+    'LINEACOM': '#99D1FC',
+    'USUARIOS': '#DFFF61',
+    'FACTOR_EXTERNO': '#64748b',
+  };
+  const total = entries.reduce((s, [, n]) => s + n, 0);
+  _mkChart(id, 'bar',
+    entries.map(([k]) => k),
+    [{
+      label: label || 'Responsable',
+      data: entries.map(([, n]) => n),
+      backgroundColor: entries.map(([k]) => COLOR_RESP[k.toUpperCase().trim()] || '#B0F2AE'),
+      borderRadius: 4,
+    }],
+    {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${(ctx.raw || 0).toLocaleString('es-CO')} (${_indPct(ctx.raw, total)})`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { ticks: { color: '#FAFAFA', font: { size: 11, weight: '600' } }, grid: { display: false } }
+      }
+    }
+  );
+}
+
 function _indSlaChart(id, rows, field) {
   const data = _slaRow(rows, field);
   const total = data.si + data.no;
@@ -1249,13 +1313,16 @@ window.openKpiWizard = function (tab, label) {
       const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
       return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
     });
+    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
+    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
     else kpiRows = todos;
   }
   else if (tab === 'papeleria') {
     if (normLabel.includes('TOTAL')) kpiRows = todos;
     else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
     else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('DENTRO') || (normLabel.includes('CUMPLE') && !normLabel.includes('AJUSTADO') && !normLabel.includes('LINEACOM') && !normLabel.includes('LARED') && !normLabel.includes('RED'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
     else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
     else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
     else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
@@ -1267,6 +1334,9 @@ window.openKpiWizard = function (tab, label) {
       const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
       return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
     });
+    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
+    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
     else kpiRows = todos;
   }
   else if (tab === 'otras-oc') {
@@ -1288,6 +1358,9 @@ window.openKpiWizard = function (tab, label) {
       const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
       return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
     });
+    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
+    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
     else kpiRows = todos;
   }
   else if (tab === 'implementacion') {
@@ -1296,6 +1369,10 @@ window.openKpiWizard = function (tab, label) {
     else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
     else if (normLabel.includes('CUMPLE') || normLabel.includes('DENTRO')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'SI');
     else if (normLabel.includes('INCUMPLE') || normLabel.includes('FUERA')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO');
+    else if (normLabel.includes('CAUSAL')) kpiRows = todos.filter(r => {
+      const v = (r['PRIMER CAUSAL  DE INCUMPLIMIENTO'] || r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+    });
     else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
       const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
       return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'IMPLEMENTADO';
@@ -1314,6 +1391,10 @@ window.openKpiWizard = function (tab, label) {
     else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'NO');
     else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
     else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
+    else if (normLabel.includes('GRAL') || (normLabel.includes('CUMPL') && normLabel.includes('GRAL'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
+    else if (normLabel.includes('LINEACOM') || (normLabel.includes('LÍNEA') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
+    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
     else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
       const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
       return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'CERRADO';
@@ -1547,7 +1628,34 @@ function renderIndCierres() {
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'cierres') +
       _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'cierres') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'cierres');
+
+    // KPIs SLA ajustado (sin factores externos) + por responsable
+    const _ci_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _ci_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
+    const _ci_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
+    kpisEl.innerHTML +=
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
+        <div class="ind-kpi-icon">📐</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_ci_aj.pct}</div>
+        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
+        <div class="ind-kpi-sub">${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)} (sin factores ext.)</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
+        <div class="ind-kpi-icon">🔗</div>
+        <div class="ind-kpi-value" style="color:#99D1FC">${_ci_lc.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
+        <div class="ind-kpi-sub">${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
+        <div class="ind-kpi-icon">📡</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_ci_lr.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
+        <div class="ind-kpi-sub">${_indFmt(_ci_lr.cumple)} / ${_indFmt(_ci_lr.base)}</div>
+      </div>`;
   }
+
+  // Responsables de incumplimiento
+  _responsableChart('ind-cierres-chart-responsable', todos, 'RESPONSABLE INCUMPLIMIENTO', 'Responsable Incumplimiento');
 
   // Causal top (horizontal) - filtrar éxitos y agendados para ver causales de retraso reales
   const byCausal = _countBy(todos.filter(r => {
@@ -1625,7 +1733,34 @@ function renderIndPapeleria() {
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'papeleria') +
       _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'papeleria') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'papeleria');
+
+    // KPIs SLA ajustado + por responsable — Papelería (campo: RESPONSABLE INCUMPLIMIENTO sin "DE")
+    const _pp_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _pp_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
+    const _pp_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
+    kpisEl.innerHTML +=
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
+        <div class="ind-kpi-icon">📐</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_pp_aj.pct}</div>
+        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
+        <div class="ind-kpi-sub">${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)} (sin factores ext.)</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
+        <div class="ind-kpi-icon">🔗</div>
+        <div class="ind-kpi-value" style="color:#99D1FC">${_pp_lc.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
+        <div class="ind-kpi-sub">${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
+        <div class="ind-kpi-icon">📡</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_pp_lr.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
+        <div class="ind-kpi-sub">${_indFmt(_pp_lr.cumple)} / ${_indFmt(_pp_lr.base)}</div>
+      </div>`;
   }
+
+  // Responsables de incumplimiento — Papelería
+  _responsableChart('ind-pp-chart-responsable', todos, 'RESPONSABLE INCUMPLIMIENTO', 'Responsable Incumplimiento');
 
   // Tipo de actividad
   const byAct = _countBy(todos.filter(r => r['TIPO DE ACTIVIDAD']), 'TIPO DE ACTIVIDAD');
@@ -1725,7 +1860,34 @@ function renderIndOtrasOC() {
       _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'otras-oc') +
       _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'otras-oc') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'otras-oc');
+
+    // KPIs SLA ajustado + por responsable — Otras OC
+    const _oc_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _oc_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
+    const _oc_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
+    kpisEl.innerHTML +=
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
+        <div class="ind-kpi-icon">📐</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_oc_aj.pct}</div>
+        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
+        <div class="ind-kpi-sub">${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)} (sin factores ext.)</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
+        <div class="ind-kpi-icon">🔗</div>
+        <div class="ind-kpi-value" style="color:#99D1FC">${_oc_lc.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
+        <div class="ind-kpi-sub">${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}</div>
+      </div>` +
+      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
+        <div class="ind-kpi-icon">📡</div>
+        <div class="ind-kpi-value" style="color:#B0F2AE">${_oc_lr.pct}</div>
+        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
+        <div class="ind-kpi-sub">${_indFmt(_oc_lr.cumple)} / ${_indFmt(_oc_lr.base)}</div>
+      </div>`;
   }
+
+  // Responsables de incumplimiento — Otras OC
+  _responsableChart('ind-otras-chart-responsable', todos, 'RESPONSABLE INCUMPLIMIENTO', 'Responsable Incumplimiento');
 
   // Actividad (Traslado, Publicidad, Pinpad) como distribución principal en la rosca
   const byAct = _countBy(todos.filter(r => r['SOLICITUD']), 'SOLICITUD');
@@ -1797,6 +1959,51 @@ function renderIndImplementacion() {
     _kpiCard('Cumple SLA', _indFmt(cumpleSLA), _indPct(cumpleSLA, total), '#00825A', '🎯', 'implementacion') +
     _kpiCard('Incumple SLA', _indFmt(noSLA), _indPct(noSLA, total), '#DFFF61', '⚠️', 'implementacion');
 
+  // KPIs: distribución por PRIMER CAUSAL DE INCUMPLIMIENTO (Impl usa campo distinto)
+  const _impl_resp = _countBy(
+    todos.filter(r => {
+      const v = (r['PRIMER CAUSAL  DE INCUMPLIMIENTO'] || r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+    }),
+    'PRIMER CAUSAL  DE INCUMPLIMIENTO'
+  );
+  // fallback si el campo tiene un solo espacio
+  const _impl_resp2 = Object.keys(_impl_resp).length ? _impl_resp : _countBy(
+    todos.filter(r => {
+      const v = (r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+    }),
+    'PRIMER CAUSAL DE INCUMPLIMIENTO'
+  );
+
+  if (kpisEl) {
+    const topCausalImpl = _topN(_impl_resp2, 1);
+    if (topCausalImpl.length) {
+      kpisEl.innerHTML +=
+        `<div class="ind-kpi-card" style="border-color:rgba(223,255,97,.3);">
+          <div class="ind-kpi-icon">🔍</div>
+          <div class="ind-kpi-value" style="color:#DFFF61;font-size:14px;">${topCausalImpl[0][0]}</div>
+          <div class="ind-kpi-label">Causal Incumpl. #1</div>
+          <div class="ind-kpi-sub">${_indFmt(topCausalImpl[0][1])} registros</div>
+        </div>`;
+    }
+  }
+
+  // Gráfica primer causal de incumplimiento
+  const causalImplTop = _topN(_impl_resp2, 8);
+  if (causalImplTop.length) {
+    _mkChart('ind-impl-chart-responsable', 'bar',
+      causalImplTop.map(x => x[0]),
+      [{ label: 'Primer Causal Incumplimiento', data: causalImplTop.map(x => x[1]), backgroundColor: '#DFFF61', borderRadius: 4 }],
+      { indexAxis: 'y', plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#FAFAFA', font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    );
+  }
+
   // Por Tipo de Solicitud
   const byTipo = _countBy(todos, 'TIPO DE SOLICITUD');
   const tipoTop = _topN(byTipo, 8);
@@ -1860,6 +2067,53 @@ function renderIndIncidentes() {
     _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'incidentes') +
     _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'incidentes') +
     _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'incidentes');
+
+  // ── Cumplimiento ajustado (≡ DAX) ──
+  // Incidentes: SLA col = 'DENTRO DE LOS SLAS' (con S), resp col = 'RESPONSABLE DE INCUMPLIMIENTO' (con DE)
+  const _INC_SLA = 'DENTRO DE LOS SLAS';
+  const _INC_RESP = 'RESPONSABLE DE INCUMPLIMIENTO';
+
+  // % Cumpl Gral wompi = Cumple Gral / Recuento incidente (total, sin ajuste)
+  const _inc_cumplGral = sla.si;
+  const _inc_pctGral = _indPct(_inc_cumplGral, total);
+
+  // % Cumpl SLA Wompi Ajustado = SLA SI (sin ext) / base sin ext
+  const _inc_aj = _slaAjustado(todos, _INC_SLA, _INC_RESP);
+
+  // % Cumpl Línea WOMPI = SLA SI donde LINEACOM / total LINEACOM
+  const _inc_lc = _slaPorResponsable(todos, _INC_SLA, _INC_RESP, 'LINEACOM');
+
+  // % Cumpl Red WOMPI (LARED)
+  const _inc_lr = _slaPorResponsable(todos, _INC_SLA, _INC_RESP, 'LARED');
+
+  if (kpisEl) kpisEl.innerHTML +=
+    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.25);">
+      <div class="ind-kpi-icon">📊</div>
+      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_pctGral}</div>
+      <div class="ind-kpi-label">% Cumpl Gral WOMPI</div>
+      <div class="ind-kpi-sub">${_indFmt(_inc_cumplGral)} / ${_indFmt(total)}</div>
+    </div>` +
+    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.4);">
+      <div class="ind-kpi-icon">📐</div>
+      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_aj.pct}</div>
+      <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
+      <div class="ind-kpi-sub">${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)} (sin factores ext.)</div>
+    </div>` +
+    `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
+      <div class="ind-kpi-icon">🔗</div>
+      <div class="ind-kpi-value" style="color:#99D1FC">${_inc_lc.pct}</div>
+      <div class="ind-kpi-label">% Cumpl Línea (LINEACOM)</div>
+      <div class="ind-kpi-sub">${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}</div>
+    </div>` +
+    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
+      <div class="ind-kpi-icon">📡</div>
+      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_lr.pct}</div>
+      <div class="ind-kpi-label">% Cumpl Red (LARED)</div>
+      <div class="ind-kpi-sub">${_indFmt(_inc_lr.cumple)} / ${_indFmt(_inc_lr.base)}</div>
+    </div>`;
+
+  // Gráfica responsables de incumplimiento — Incidentes (campo con "DE")
+  _responsableChart('ind-inc-chart-responsable', todos, 'RESPONSABLE DE INCUMPLIMIENTO', 'Responsable Incumplimiento');
 
   // Por Grupo Falla
   const byGrupo = _countBy(todos.filter(r => r['GRUPO_FALLA']), 'GRUPO_FALLA');
