@@ -289,12 +289,93 @@ function _mkChart(id, type, labels, datasets, opts = {}) {
 function _kpiCard(label, value, sub = '', color = '#B0F2AE', icon = '', tabKey = '') {
   const cleanLabel = label.replace(/'/g, "\\'");
   let infoHtml = '';
+  
   if (label === 'Facturables') {
     infoHtml = `<div class="kpi-info-icon" title="Registros con cobro asociado (valores distintos de 'NO APLICA' y '0')">ⓘ</div>`;
   } else if (label === 'Atribuibles') {
     infoHtml = `<div class="kpi-info-icon" title="Registros con responsabilidad de retraso o falla asignada (valores distintos de 'NO APLICA' y '0')">ⓘ</div>`;
   }
 
+  // --- BRAND STYLING FOR CUMPLIMIENTO WOMPI ---
+  if (label === 'Cumplimiento WOMPI') {
+    return `
+      <div class="ind-kpi-card ind-kpi-clickable" onclick="openKpiWizard('${tabKey}', '${cleanLabel}')" 
+        style="
+          cursor:pointer; 
+          position:relative; 
+          background: linear-gradient(135deg, rgba(223, 255, 97, 0.08) 0%, rgba(0, 130, 90, 0.15) 100%);
+          border: 1px solid rgba(223, 255, 97, 0.55);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 25px rgba(223, 255, 97, 0.22);
+          transform: translateY(-2px);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        "
+        onmouseover="this.style.boxShadow='0 12px 40px rgba(0,0,0,0.7), 0 0 35px rgba(223, 255, 97, 0.4)';this.style.borderColor='#DFFF61';this.style.transform='translateY(-4px)';"
+        onmouseout="this.style.boxShadow='0 8px 32px rgba(0,0,0,0.6), 0 0 25px rgba(223, 255, 97, 0.22)';this.style.borderColor='rgba(223, 255, 97, 0.55)';this.style.transform='translateY(-2px)';">
+        
+        <div style="position: absolute; top: 8px; right: 10px; font-size: 8px; font-weight: 800; background: rgba(223, 255, 97, 0.2); color: #DFFF61; padding: 2px 6px; border-radius: 10px; letter-spacing: 0.5px; border: 1px solid rgba(223, 255, 97, 0.3);">
+          ⚡ WOMPI
+        </div>
+        <div class="ind-kpi-icon" style="filter: drop-shadow(0 0 8px rgba(223, 255, 97, 0.4));">${icon}</div>
+        <div class="ind-kpi-value" style="color:#DFFF61; font-size: 28px; font-weight: 800; text-shadow: 0 0 15px rgba(223, 255, 97, 0.35);">${value}</div>
+        <div class="ind-kpi-label" style="color:#fff; font-weight: 700; letter-spacing: 0.2px; text-transform: uppercase; font-size: 10.5px;">${label}</div>
+        ${sub ? `<div class="ind-kpi-sub" style="color:#B0F2AE; opacity: 0.95; font-weight: 600; font-family:'JetBrains Mono',monospace; font-size:11px; margin-top:2px;">${sub}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // --- BRAND STYLING FOR CUMPLIMIENTO LINEACOM ---
+  if (label === 'Cumplimiento LINEACOM') {
+    return `
+      <div class="ind-kpi-card ind-kpi-clickable" onclick="openKpiWizard('${tabKey}', '${cleanLabel}')" 
+        style="
+          cursor:pointer; 
+          position:relative; 
+          background: linear-gradient(135deg, rgba(153, 209, 252, 0.07) 0%, rgba(20, 80, 160, 0.15) 100%);
+          border: 1px solid rgba(153, 209, 252, 0.55);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 25px rgba(153, 209, 252, 0.22);
+          transform: translateY(-2px);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        "
+        onmouseover="this.style.boxShadow='0 12px 40px rgba(0,0,0,0.7), 0 0 35px rgba(153, 209, 252, 0.4)';this.style.borderColor='#99D1FC';this.style.transform='translateY(-4px)';"
+        onmouseout="this.style.boxShadow='0 8px 32px rgba(0,0,0,0.6), 0 0 25px rgba(153, 209, 252, 0.22)';this.style.borderColor='rgba(153, 209, 252, 0.55)';this.style.transform='translateY(-2px)';">
+        
+        <div style="position: absolute; top: 8px; right: 10px; font-size: 8px; font-weight: 800; background: rgba(153, 209, 252, 0.2); color: #99D1FC; padding: 2px 6px; border-radius: 10px; letter-spacing: 0.5px; border: 1px solid rgba(153, 209, 252, 0.3);">
+          ⚡ LINEA
+        </div>
+        <div class="ind-kpi-icon" style="filter: drop-shadow(0 0 8px rgba(153, 209, 252, 0.4));">${icon}</div>
+        <div class="ind-kpi-value" style="color:#99D1FC; font-size: 28px; font-weight: 800; text-shadow: 0 0 15px rgba(153, 209, 252, 0.35);">${value}</div>
+        <div class="ind-kpi-label" style="color:#fff; font-weight: 700; letter-spacing: 0.2px; text-transform: uppercase; font-size: 10.5px;">${label}</div>
+        ${sub ? `<div class="ind-kpi-sub" style="color:#99D1FC; opacity: 0.95; font-weight: 600; font-family:'JetBrains Mono',monospace; font-size:11px; margin-top:2px;">${sub}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // --- BRAND STYLING FOR FALLAS ---
+  if (label.includes('Fallas')) {
+    const isWompi = label.includes('WOMPI');
+    const fColor = isWompi ? '#99D1FC' : '#DFFF61';
+    const fBg = isWompi ? 'rgba(153, 209, 252, 0.04)' : 'rgba(223, 255, 97, 0.04)';
+    const fBord = isWompi ? 'rgba(153, 209, 252, 0.2)' : 'rgba(223, 255, 97, 0.2)';
+    return `
+      <div class="ind-kpi-card ind-kpi-clickable" onclick="openKpiWizard('${tabKey}', '${cleanLabel}')" 
+        style="
+          cursor:pointer; 
+          position:relative; 
+          background: ${fBg};
+          border: 1px solid ${fBord};
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        "
+        onmouseover="this.style.borderColor='${fColor}';this.style.boxShadow='0 4px 15px rgba(0,0,0,0.4)';"
+        onmouseout="this.style.borderColor='${fBord}';this.style.boxShadow='none';">
+        <div class="ind-kpi-icon">${icon}</div>
+        <div class="ind-kpi-value" style="color:${fColor}">${value}</div>
+        <div class="ind-kpi-label">${label}</div>
+        ${sub ? `<div class="ind-kpi-sub">${sub}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // Standard KPI Card
   return `<div class="ind-kpi-card ind-kpi-clickable" onclick="openKpiWizard('${tabKey}', '${cleanLabel}')" style="cursor:pointer; position:relative;">
     ${infoHtml}
     <div class="ind-kpi-icon">${icon}</div>
@@ -544,14 +625,76 @@ function _indSlaChart(id, rows, field) {
   });
 }
 
-function _simpleTable(elId, entries, col1, total) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  el.innerHTML = `<table class="ind-table">
-    <thead><tr><th>${col1}</th><th>Cantidad</th><th>%</th></tr></thead>
-    <tbody>${entries.map(([k, n]) => `
-      <tr><td>${k}</td><td>${_indFmt(n)}</td><td>${_indPct(n, total)}</td></tr>`).join('')}
-    </tbody></table>`;
+function _renderSearchableTable(elId, rows, field, colHeader) {
+  const container = document.getElementById(elId);
+  if (!container) return;
+
+  // Group and count all values
+  const counts = _countBy(rows.filter(r => r[field] && r[field].toString().trim() !== '' && r[field].toString().toUpperCase() !== 'NULL'), field);
+  const total = rows.length || 1;
+  
+  // Sort descending
+  const allEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  // Unique ID for the input search
+  const searchInputId = `search-tbl-${elId}`;
+
+  // Helper to render the rows
+  function getTableBodyHtml(filterText = '') {
+    const query = filterText.toLowerCase().trim();
+    const filteredEntries = allEntries.filter(([k]) => k.toLowerCase().includes(query));
+    if (filteredEntries.length === 0) {
+      return `<tr><td colspan="3" style="text-align:center;color:#64748b;padding:20px;">Sin resultados</td></tr>`;
+    }
+    return filteredEntries.map(([k, n]) => `
+      <tr>
+        <td style="font-weight: 500; font-family: 'Outfit', sans-serif;">${k}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#B0F2AE;text-align:right;font-size:11.5px;">${_indFmt(n)}</td>
+        <td style="font-family:'JetBrains Mono',monospace;color:#94a3b8;text-align:right;font-size:11.5px;">${_indPct(n, total)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Remove ind-table-wrap to avoid double border styling
+  container.className = "";
+
+  // Initial render of the widget
+  container.innerHTML = `
+    <div style="background: rgba(13,12,11,.6); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; height: 100%;">
+      <!-- Search input header -->
+      <div style="padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+        <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Tabla Completa (${allEntries.length})</span>
+        <input type="text" id="${searchInputId}" placeholder="🔍 Buscar..." 
+          style="background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 6px; padding: 4px 10px; color: #fff; font-size: 11px; outline: none; width: 140px; font-family:'Outfit',sans-serif;">
+      </div>
+      <!-- Scrollable table container -->
+      <div style="max-height: 280px; overflow-y: auto; flex: 1;">
+        <table class="ind-table" style="margin-bottom: 0; width: 100%;">
+          <thead>
+            <tr style="position: sticky; top: 0; z-index: 5; background: #161514;">
+              <th>${colHeader}</th>
+              <th style="text-align:right; width: 80px;">Cant.</th>
+              <th style="text-align:right; width: 70px;">%</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-${elId}">
+            ${getTableBodyHtml()}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Bind input event listener
+  const inputEl = document.getElementById(searchInputId);
+  if (inputEl) {
+    inputEl.oninput = function (e) {
+      const tbodyEl = document.getElementById(`tbody-${elId}`);
+      if (tbodyEl) {
+        tbodyEl.innerHTML = getTableBodyHtml(e.target.value);
+      }
+    };
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1351,24 +1494,65 @@ window.openKpiWizard = function (tab, label) {
   const respVal2 = tab === 'incidentes' ? 'WOMPI' : 'LARED';
 
   let handled = false;
-  if (normLabel.includes('AJUSTADO')) {
-    kpiRows = todos.filter(r => 
-      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
-      ['LINEACOM', respVal2].includes((r[respField] || '').toString().toUpperCase().trim())
-    );
-    handled = true;
-  } else if (normLabel.includes('LINEACOM') || (normLabel.includes('LÍNEA') && normLabel.includes('CUMPL'))) {
-    kpiRows = todos.filter(r => 
-      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
-      (r[respField] || '').toString().toUpperCase().trim() === 'LINEACOM'
-    );
-    handled = true;
-  } else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) {
-    kpiRows = todos.filter(r => 
-      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
-      (r[respField] || '').toString().toUpperCase().trim() === respVal2
-    );
-    handled = true;
+
+  // --- SPECIAL INTERCEPTION FOR IMPLEMENTATION TAB ---
+  if (tab === 'implementacion') {
+    if (normLabel.includes('FALLAS LINEACOM') || (normLabel.includes('LINEACOM') && normLabel.includes('FALLA'))) {
+      kpiRows = todos.filter(r => 
+        (r['ESTADO'] || '').toString().toUpperCase().trim() === 'IMPLEMENTADO' &&
+        (r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'NO' &&
+        (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() === 'LINEA'
+      );
+      handled = true;
+    }
+    else if (normLabel.includes('FALLAS WOMPI') || (normLabel.includes('WOMPI') && normLabel.includes('FALLA'))) {
+      kpiRows = todos.filter(r => 
+        (r['ESTADO'] || '').toString().toUpperCase().trim() === 'IMPLEMENTADO' &&
+        (r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'NO' &&
+        (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() === 'WOMPI'
+      );
+      handled = true;
+    }
+    else if (normLabel.includes('CUMPLIMIENTO LINEACOM')) {
+      kpiRows = todos.filter(r => 
+        (r['ESTADO'] || '').toString().toUpperCase().trim() === 'IMPLEMENTADO' &&
+        ((r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'SI' ||
+         (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() !== 'LINEA')
+      );
+      handled = true;
+    }
+    else if (normLabel.includes('CUMPLIMIENTO WOMPI')) {
+      kpiRows = todos.filter(r => 
+        (r['ESTADO'] || '').toString().toUpperCase().trim() === 'IMPLEMENTADO' &&
+        ((r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'SI' ||
+         ((r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() !== 'LINEA' &&
+          (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() !== 'WOMPI'))
+      );
+      handled = true;
+    }
+  }
+
+  // --- GENERAL CHECKS FOR OTHER TABS ---
+  if (!handled) {
+    if (normLabel.includes('AJUSTADO') || (normLabel.includes('WOMPI') && normLabel.includes('CUMPL'))) {
+      kpiRows = todos.filter(r => 
+        (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+        ['LINEACOM', respVal2].includes((r[respField] || '').toString().toUpperCase().trim())
+      );
+      handled = true;
+    } else if (normLabel.includes('LINEACOM') || (normLabel.includes('LÍNEA') && normLabel.includes('CUMPL'))) {
+      kpiRows = todos.filter(r => 
+        (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+        (r[respField] || '').toString().toUpperCase().trim() === 'LINEACOM'
+      );
+      handled = true;
+    } else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) {
+      kpiRows = todos.filter(r => 
+        (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+        (r[respField] || '').toString().toUpperCase().trim() === respVal2
+      );
+      handled = true;
+    }
   }
 
   if (!handled) {
@@ -1679,10 +1863,6 @@ function renderIndCierres() {
   const abiertos = todos.filter(r => r._is_abierto);
   const total = todos.length;
 
-  const sla = _slaRow(todos, 'DENTRO DE LOS SLA');
-  const fact = todos.filter(r => _isTrueVal(r['FACTURABLE'])).length;
-  const atrib = todos.filter(r => _isTrueVal(r['ATRIBUIBLE'])).length;
-
   const kpisEl = document.getElementById('ind-cierres-kpis');
   if (kpisEl) {
     const _ci_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
@@ -1693,8 +1873,7 @@ function renderIndCierres() {
       _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'cierres') +
       _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'cierres') +
       _kpiCard('Cumplimiento WOMPI', _ci_aj.pct, `${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)}`, '#B0F2AE', '📐', 'cierres') +
-      _kpiCard('Cumplimiento LINEACOM', _ci_lc.pct, `${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}`, '#99D1FC', '🔗', 'cierres') +
-      _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'cierres');
+      _kpiCard('Cumplimiento LINEACOM', _ci_lc.pct, `${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}`, '#99D1FC', '🔗', 'cierres');
   }
 
   // Responsables de incumplimiento
@@ -1730,13 +1909,11 @@ function renderIndCierres() {
   // Top departamentos
   _deptoChart('ind-cierres-chart-depto', todos, 'Cierres', '#DFFF61');
 
-  // Tabla tipo actividad
-  const byAct = _countBy(todos.filter(r => r['TIPO DE ACTIVIDAD']), 'TIPO DE ACTIVIDAD');
-  _simpleTable('ind-cierres-table-act', _topN(byAct, 8), 'Tipo Actividad', total);
+  // Tabla completa formatos
+  _renderSearchableTable('ind-cierres-table-act', todos, 'FORMATO', 'Formatos del CB');
 
-  // Tabla técnico
-  const byTec = _countBy(todos.filter(r => r['TÉCNICO DE CAMPO']), 'TÉCNICO DE CAMPO');
-  _simpleTable('ind-cierres-table-tec', _topN(byTec, 8), 'Técnico de Campo', total);
+  // Tabla completa técnico
+  _renderSearchableTable('ind-cierres-table-tec', todos, 'TÉCNICO DE CAMPO', 'Técnico de Campo');
 
   // Forma de Atención: Visita Técnica vs Soporte Telefónico
   _formaAtencionChart('ind-cierres-chart-forma', todos, 'FORMA DE ATENCIÓN');
@@ -1752,10 +1929,6 @@ function renderIndPapeleria() {
   const abiertos = todos.filter(r => r._is_abierto);
   const total = todos.length;
 
-  const sla = _slaRow(todos, 'DENTRO DE LOS SLA');
-  const fact = todos.filter(r => _isTrueVal(r['FACTURABLE'])).length;
-  const atrib = todos.filter(r => _isTrueVal(r['ATRIBUIBLE'])).length;
-
   const kpisEl = document.getElementById('ind-pp-kpis');
   if (kpisEl) {
     const _pp_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
@@ -1766,8 +1939,7 @@ function renderIndPapeleria() {
       _kpiCard('Cerradas', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'papeleria') +
       _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'papeleria') +
       _kpiCard('Cumplimiento WOMPI', _pp_aj.pct, `${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)}`, '#B0F2AE', '📐', 'papeleria') +
-      _kpiCard('Cumplimiento LINEACOM', _pp_lc.pct, `${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}`, '#99D1FC', '🔗', 'papeleria') +
-      _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'papeleria');
+      _kpiCard('Cumplimiento LINEACOM', _pp_lc.pct, `${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}`, '#99D1FC', '🔗', 'papeleria');
   }
 
   // Responsables de incumplimiento — Papelería
@@ -1800,23 +1972,23 @@ function renderIndPapeleria() {
   // Top departamentos
   _deptoChart('ind-pp-chart-depto', todos, 'Papelería', '#B0F2AE');
 
-  // Tabla causal
-  const byCausal = _countBy(todos.filter(r => {
+  // Causal Top 8 Bar Chart - de retraso real
+  const byCausalFiltered = todos.filter(r => {
     const c = (r['CAUSAL'] || '').toString().toUpperCase().trim();
     return c && c !== 'CIERRE EXITOSO' && c !== 'EJECUTADO EXITOSO' && c !== 'AGENDADO' && c !== 'N/A' && c !== '0';
-  }), 'CAUSAL');
-  _simpleTable('ind-pp-table-causal', _topN(byCausal, 8), 'Causal', total);
-
-  // Causal Top 8 Bar Chart - de retraso real
+  });
+  const byCausal = _countBy(byCausalFiltered, 'CAUSAL');
   const causalTop = _topN(byCausal, 8);
   _mkChart('ind-pp-chart-causal', 'bar', causalTop.map(x => x[0]),
     [{ label: 'Papelería', data: causalTop.map(x => x[1]), backgroundColor: '#B0F2AE' }],
     { plugins: { legend: { display: false } }, indexAxis: 'y' }
   );
 
-  // Tabla operador logístico
-  const byOp = _countBy(todos.filter(r => r['OPERADOR LOGÍSTICO'] || r['OPERADOR LOGISTICO']), 'OPERADOR LOGÍSTICO');
-  _simpleTable('ind-pp-table-op', _topN(byOp, 6), 'Operador Logístico', total);
+  // Tabla completa causal
+  _renderSearchableTable('ind-pp-table-causal', byCausalFiltered, 'CAUSAL', 'Causales de Retraso');
+
+  // Tabla completa operador logístico
+  _renderSearchableTable('ind-pp-table-op', todos, 'OPERADOR LOGÍSTICO', 'Operador Logístico');
 
   // Forma de Atención: Visita Técnica vs Soporte Telefónico
   _formaAtencionChart('ind-pp-chart-forma', todos, 'FORMA DE ATENCIÓN');
@@ -1832,22 +2004,6 @@ function renderIndOtrasOC() {
   const abiertos = todos.filter(r => r._is_abierto);
   const total = todos.length;
 
-  const sla = _slaRow(todos, 'DENTRO DE LOS SLA');
-  const fact = todos.filter(r => _isTrueVal(r['FACTURABLE'])).length;
-  const atrib = todos.filter(r => _isTrueVal(r['ATRIBUIBLE'])).length;
-
-  const traslados = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'TRASLADO');
-  const trasladoSla = _slaRow(traslados, 'DENTRO DE LOS SLA');
-  const trasladoSlaPct = _indPct(trasladoSla.si, traslados.length);
-
-  const publicidad = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PUBLICIDAD');
-  const publicidadSla = _slaRow(publicidad, 'DENTRO DE LOS SLA');
-  const publicidadSlaPct = _indPct(publicidadSla.si, publicidad.length);
-
-  const pinpad = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PINPAD');
-  const pinpadSla = _slaRow(pinpad, 'DENTRO DE LOS SLA');
-  const pinpadSlaPct = _indPct(pinpadSla.si, pinpad.length);
-
   const kpisEl = document.getElementById('ind-otras-kpis');
   if (kpisEl) {
     const _oc_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
@@ -1858,8 +2014,7 @@ function renderIndOtrasOC() {
       _kpiCard('Cerradas', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'otras-oc') +
       _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'otras-oc') +
       _kpiCard('Cumplimiento WOMPI', _oc_aj.pct, `${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)}`, '#B0F2AE', '📐', 'otras-oc') +
-      _kpiCard('Cumplimiento LINEACOM', _oc_lc.pct, `${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}`, '#99D1FC', '🔗', 'otras-oc') +
-      _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'otras-oc');
+      _kpiCard('Cumplimiento LINEACOM', _oc_lc.pct, `${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}`, '#99D1FC', '🔗', 'otras-oc');
   }
 
   // Responsables de incumplimiento — Otras OC
@@ -1893,23 +2048,23 @@ function renderIndOtrasOC() {
   // Top departamentos
   _deptoChart('ind-otras-chart-depto', todos, 'Otras OC', '#B0F2AE');
 
-  // Tabla causal
-  const byCausal = _countBy(todos.filter(r => {
+  // Causal Top 8 Bar Chart - de retraso real
+  const byCausalFiltered = todos.filter(r => {
     const c = (r['CAUSAL'] || '').toString().toUpperCase().trim();
     return c && c !== 'CIERRE EXITOSO' && c !== 'EJECUTADO EXITOSO' && c !== 'AGENDADO' && c !== 'N/A' && c !== '0';
-  }), 'CAUSAL');
-  _simpleTable('ind-otras-table-causal', _topN(byCausal, 8), 'Causal', total);
-
-  // Causal Top 8 Bar Chart - de retraso real
+  });
+  const byCausal = _countBy(byCausalFiltered, 'CAUSAL');
   const causalTop = _topN(byCausal, 8);
   _mkChart('ind-otras-chart-causal', 'bar', causalTop.map(x => x[0]),
     [{ label: 'Otras OC', data: causalTop.map(x => x[1]), backgroundColor: '#B0F2AE' }],
     { plugins: { legend: { display: false } }, indexAxis: 'y' }
   );
 
-  // Tabla técnico
-  const byTec = _countBy(todos.filter(r => r['TÉCNICO DE CAMPO']), 'TÉCNICO DE CAMPO');
-  _simpleTable('ind-otras-table-tec', _topN(byTec, 8), 'Técnico de Campo', total);
+  // Tabla completa causal
+  _renderSearchableTable('ind-otras-table-causal', byCausalFiltered, 'CAUSAL', 'Causales de Retraso');
+
+  // Tabla completa técnico
+  _renderSearchableTable('ind-otras-table-tec', todos, 'TÉCNICO DE CAMPO', 'Técnico de Campo');
 
   // Forma de Atención: Visita Técnica vs Soporte Telefónico
   _formaAtencionChart('ind-otras-chart-forma', todos, 'FORMA DE ATENCIÓN');
@@ -1989,26 +2144,19 @@ function renderIndImplementacion() {
     );
   }
 
-  // Segundo Causal de Incumplimiento
-  const _impl_seg = _countBy(
+  // Segundo Causal de Incumplimiento - Reemplazado por Causales de Retraso General usando columna 'CAUSAL'
+  const _impl_causal_general = _countBy(
     todos.filter(r => {
-      const v = (r['SEGUNDO CAUSAL  DE INCUMPLIMIENTO'] || r['SEGUNDO CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
-      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+      const c = (r['CAUSAL'] || '').toString().trim().toUpperCase();
+      return c && c !== '' && c !== 'NULL' && c !== 'N/A' && c !== '0' && c !== 'CIERRE EXITOSO' && c !== 'EJECUTADO EXITOSO' && c !== 'AGENDADO' && c !== 'IMPLEMENTADO';
     }),
-    'SEGUNDO CAUSAL  DE INCUMPLIMIENTO'
+    'CAUSAL'
   );
-  const _impl_seg2 = Object.keys(_impl_seg).length ? _impl_seg : _countBy(
-    todos.filter(r => {
-      const v = (r['SEGUNDO CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
-      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
-    }),
-    'SEGUNDO CAUSAL DE INCUMPLIMIENTO'
-  );
-  const segTop = _topN(_impl_seg2, 8);
+  const segTop = _topN(_impl_causal_general, 8);
   if (segTop.length) {
     _mkChart('ind-impl-chart-segundo-causal', 'bar',
       segTop.map(x => x[0]),
-      [{ label: 'Segundo Causal Incumplimiento', data: segTop.map(x => x[1]), backgroundColor: '#99D1FC', borderRadius: 4 }],
+      [{ label: 'Causales de Retraso', data: segTop.map(x => x[1]), backgroundColor: '#99D1FC', borderRadius: 4 }],
       { indexAxis: 'y', plugins: { legend: { display: false } },
         scales: {
           x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
@@ -2018,11 +2166,11 @@ function renderIndImplementacion() {
     );
   }
 
-  // Responsable / Observación Estándar
+  // Responsable / Observación Estándar (excluyendo N/A y 0)
   const _impl_obs = _countBy(
     todos.filter(r => {
-      const v = (r['OBSERVACIÓN ESTANDAR'] || '').toString().trim();
-      return v && v !== '' && v.toUpperCase() !== 'NULL';
+      const v = (r['OBSERVACIÓN ESTANDAR'] || '').toString().trim().toUpperCase();
+      return v && v !== '' && v !== 'NULL' && v !== 'N/A' && v !== '0';
     }),
     'OBSERVACIÓN ESTANDAR'
   );
@@ -2059,16 +2207,15 @@ function renderIndImplementacion() {
   // Top Departamentos
   _deptoChart('ind-impl-chart-depto', todos, 'Actividades', '#99D1FC');
 
-  // Tabla causales - filtrar N/A y éxitos para ver causales de retraso reales
-  const byCausal = _countBy(todos.filter(r => {
+  // Tabla completa causales - filtrar N/A, éxitos y 0 para ver causales de retraso reales
+  const byCausalFiltered = todos.filter(r => {
     const c = (r['CAUSAL'] || '').toString().toUpperCase().trim();
-    return c && c !== 'N/A' && c !== 'CIERRE EXITOSO' && c !== 'EJECUTADO EXITOSO' && c !== 'AGENDADO' && c !== '0';
-  }), 'CAUSAL');
-  _simpleTable('ind-impl-table-causal', _topN(byCausal, 8), 'Causal', total);
+    return c && c !== 'N/A' && c !== 'CIERRE EXITOSO' && c !== 'EJECUTADO EXITOSO' && c !== 'AGENDADO' && c !== '0' && c !== 'IMPLEMENTADO';
+  });
+  _renderSearchableTable('ind-impl-table-causal', byCausalFiltered, 'CAUSAL', 'Causales de Retraso');
 
-  // Tabla técnicos
-  const byTec = _countBy(todos.filter(r => r['TÉCNICO']), 'TÉCNICO');
-  _simpleTable('ind-impl-table-tec', _topN(byTec, 8), 'Técnico', total);
+  // Tabla completa técnicos
+  _renderSearchableTable('ind-impl-table-tec', todos, 'TÉCNICO', 'Técnico de Implementación');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2099,8 +2246,7 @@ function renderIndIncidentes() {
       _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'incidentes') +
       _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'incidentes') +
       _kpiCard('Cumplimiento WOMPI', _inc_aj.pct, `${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)}`, '#00825A', '📐', 'incidentes') +
-      _kpiCard('Cumplimiento LINEACOM', _inc_lc.pct, `${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}`, '#99D1FC', '🔗', 'incidentes') +
-      _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'incidentes');
+      _kpiCard('Cumplimiento LINEACOM', _inc_lc.pct, `${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}`, '#99D1FC', '🔗', 'incidentes');
   }
 
   // Gráfica responsables de incumplimiento — Incidentes (campo con "DE")
@@ -2178,20 +2324,19 @@ function renderIndIncidentes() {
     );
   }
 
-  // Tabla fallas
-  const byFalla = _countBy(todos.filter(r => r['FALLA']), 'FALLA');
-  _simpleTable('ind-inc-table-falla', _topN(byFalla, 8), 'Falla', total);
+  // Tabla completa fallas
+  _renderSearchableTable('ind-inc-table-falla', todos, 'FALLA', 'Fallas del Ticket');
 
   // Top Fallas Horizontal Bar Chart
+  const byFalla = _countBy(todos.filter(r => r['FALLA']), 'FALLA');
   const fallaTop = _topN(byFalla, 8);
   _mkChart('ind-inc-chart-falla-bar', 'bar', fallaTop.map(x => x[0]),
     [{ label: 'Incidentes', data: fallaTop.map(x => x[1]), backgroundColor: '#00825A' }],
     { plugins: { legend: { display: false } }, indexAxis: 'y' }
   );
 
-  // Tabla técnicos
-  const byTec = _countBy(todos.filter(r => r['TÉCNICO DE CAMPO']), 'TÉCNICO DE CAMPO');
-  _simpleTable('ind-inc-table-tec', _topN(byTec, 8), 'Técnico de Campo', total);
+  // Tabla completa técnicos
+  _renderSearchableTable('ind-inc-table-tec', todos, 'TÉCNICO DE CAMPO', 'Técnico de Campo');
 
   // Forma de Atención: Visita Técnica vs Soporte Telefónico
   _formaAtencionChart('ind-inc-chart-forma', todos, 'FORMA DE ATENCIÓN');
