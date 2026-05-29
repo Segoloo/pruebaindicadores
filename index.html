@@ -1877,6 +1877,30 @@
                   <label>Mes</label>
                   <div id="ind-f-mes" class="ms-container" data-placeholder="Todos"></div>
                 </div>
+                <div class="filter-group">
+                  <label>Coordinador Encargado</label>
+                  <div id="ind-f-coordinador" class="ms-container" data-placeholder="Todos"></div>
+                </div>
+                <div class="filter-group">
+                  <label>Ciudad Sede</label>
+                  <div id="ind-f-ciudad-sede" class="ms-container" data-placeholder="Todas"></div>
+                </div>
+                <div class="filter-group">
+                  <label>Forma de Atención</label>
+                  <div id="ind-f-forma-atencion" class="ms-container" data-placeholder="Todas"></div>
+                </div>
+                <div class="filter-group">
+                  <label>Grupo de Falla</label>
+                  <div id="ind-f-grupo-falla" class="ms-container" data-placeholder="Todos"></div>
+                </div>
+                <div class="filter-group">
+                  <label>Urgencia</label>
+                  <div id="ind-f-urgencia" class="ms-container" data-placeholder="Todas"></div>
+                </div>
+                <div class="filter-group">
+                  <label>Tipo / Trayecto</label>
+                  <div id="ind-f-tipo-sede" class="ms-container" data-placeholder="Todos"></div>
+                </div>
                 <div class="filters-actions" style="align-self:flex-end; display:flex; gap:8px;">
                   <button class="btn-apply" onclick="indApplyFilters()" style="padding:8px 16px;border-radius:8px;">✦
                     Aplicar</button>
@@ -1969,6 +1993,16 @@
                     <input type="text" id="ind-col-f-ticket-cierres" placeholder="🎟️ Filtrar por OC/Ticket..."
                       oninput="window.indApplyTableFilters('cierres')"
                       style="background:rgba(255,255,255,.05);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;width:165px;outline:none;">
+                    <select id="ind-col-f-estado-cierres" onchange="window.indApplyTableFilters('cierres')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-sla-cierres" onchange="window.indApplyTableFilters('cierres')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-resp-cierres" onchange="window.indApplyTableFilters('cierres')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-depto-cierres" onchange="window.indApplyTableFilters('cierres')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-causal-cierres" onchange="window.indApplyTableFilters('cierres')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
                     <button class="btn-export" onclick="exportIndToExcel('cierres')">⬇ Exportar Excel</button>
                   </div>
                 </div>
@@ -2075,6 +2109,16 @@
                     <input type="text" id="ind-col-f-ticket-papeleria" placeholder="🎟️ Filtrar por OC/Ticket..."
                       oninput="window.indApplyTableFilters('papeleria')"
                       style="background:rgba(255,255,255,.05);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;width:165px;outline:none;">
+                    <select id="ind-col-f-estado-papeleria" onchange="window.indApplyTableFilters('papeleria')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-sla-papeleria" onchange="window.indApplyTableFilters('papeleria')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-resp-papeleria" onchange="window.indApplyTableFilters('papeleria')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-depto-papeleria" onchange="window.indApplyTableFilters('papeleria')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-causal-papeleria" onchange="window.indApplyTableFilters('papeleria')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(196,240,196,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
                     <button class="btn-export" onclick="exportIndToExcel('papeleria')">⬇ Exportar Excel</button>
                   </div>
                 </div>
@@ -2181,6 +2225,16 @@
                     <input type="text" id="ind-col-f-ticket-otras-oc" placeholder="🎟️ Filtrar por OC/Ticket..."
                       oninput="window.indApplyTableFilters('otras-oc')"
                       style="background:rgba(255,255,255,.05);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;width:165px;outline:none;">
+                    <select id="ind-col-f-estado-otras-oc" onchange="window.indApplyTableFilters('otras-oc')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-sla-otras-oc" onchange="window.indApplyTableFilters('otras-oc')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-resp-otras-oc" onchange="window.indApplyTableFilters('otras-oc')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-depto-otras-oc" onchange="window.indApplyTableFilters('otras-oc')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-causal-otras-oc" onchange="window.indApplyTableFilters('otras-oc')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(255,192,77,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
                     <button class="btn-export" onclick="exportIndToExcel('otras-oc')">⬇ Exportar Excel</button>
                   </div>
                 </div>
@@ -2288,6 +2342,16 @@
                     <input type="text" id="ind-col-f-ticket-implementacion" placeholder="🎟️ Filtrar por OT/Orden..."
                       oninput="window.indApplyTableFilters('implementacion')"
                       style="background:rgba(255,255,255,.05);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;width:165px;outline:none;">
+                    <select id="ind-col-f-estado-implementacion" onchange="window.indApplyTableFilters('implementacion')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-sla-implementacion" onchange="window.indApplyTableFilters('implementacion')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-resp-implementacion" onchange="window.indApplyTableFilters('implementacion')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-depto-implementacion" onchange="window.indApplyTableFilters('implementacion')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-causal-implementacion" onchange="window.indApplyTableFilters('implementacion')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(176,242,174,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
                     <button class="btn-export" onclick="exportIndToExcel('implementacion')">⬇ Exportar Excel</button>
                   </div>
                 </div>
@@ -2394,6 +2458,16 @@
                     <input type="text" id="ind-col-f-ticket-incidentes" placeholder="🎟️ Filtrar por Incidente..."
                       oninput="window.indApplyTableFilters('incidentes')"
                       style="background:rgba(255,255,255,.05);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;width:165px;outline:none;">
+                    <select id="ind-col-f-estado-incidentes" onchange="window.indApplyTableFilters('incidentes')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-sla-incidentes" onchange="window.indApplyTableFilters('incidentes')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-resp-incidentes" onchange="window.indApplyTableFilters('incidentes')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-depto-incidentes" onchange="window.indApplyTableFilters('incidentes')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
+                    <select id="ind-col-f-causal-incidentes" onchange="window.indApplyTableFilters('incidentes')"
+                      style="background:rgba(25,24,23,.95);border:1px solid rgba(153,209,252,.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:12px;outline:none;cursor:pointer;"></select>
                     <button class="btn-export" onclick="exportIndToExcel('incidentes')">⬇ Exportar Excel</button>
                   </div>
                 </div>

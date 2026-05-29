@@ -741,6 +741,13 @@ function initIndicadoresFilters() {
   const anios = new Set();
   const meses = new Set();
 
+  const coordinadores = new Set();
+  const ciudadesSede = new Set();
+  const formasAtencion = new Set();
+  const gruposFalla = new Set();
+  const urgencias = new Set();
+  const tiposSede = new Set();
+
   const tabs = ['cierres', 'papeleria', 'otras-oc', 'implementacion', 'incidentes'];
   tabs.forEach(tab => {
     const data = _getTabDataset(tab);
@@ -766,6 +773,24 @@ function initIndicadoresFilters() {
 
       if (r['FORMATO']) formatos.add(r['FORMATO'].toString().trim());
       if (r['TIPOLOGIA']) tipologias.add(r['TIPOLOGIA'].toString().trim());
+
+      const coordVal = r['COORDINADOR ENCARGADO'];
+      if (coordVal) coordinadores.add(coordVal.toString().trim());
+
+      const sedeVal = r['CIUDAD SEDE'];
+      if (sedeVal) ciudadesSede.add(sedeVal.toString().trim());
+
+      const formaVal = r['FORMA DE ATENCIÓN'] || r['FORMA DE ATENCION'] || r['TIPO DE ATENCIÓN'] || r['TIPO DE ATENCION'];
+      if (formaVal) formasAtencion.add(formaVal.toString().trim());
+
+      const grupoVal = r['GRUPO_FALLA'] || r['GRUPO FALLA'];
+      if (grupoVal) gruposFalla.add(grupoVal.toString().trim());
+
+      const urgenciaVal = r['URGENCIA'];
+      if (urgenciaVal) urgencias.add(urgenciaVal.toString().trim());
+
+      const tipoVal = r['TIPO'] || r['MIXTO/PURO'] || r['TIPO DE ATENCIÓN'] || r['TIPO DE ATENCION'];
+      if (tipoVal) tiposSede.add(tipoVal.toString().trim());
 
       const dateVal = r['FECHA DE APERTURA (DD/MM/AAAA)'] ||
         r['FECHA DE INICIO'] ||
@@ -795,6 +820,13 @@ function initIndicadoresFilters() {
   window._setupMS('ind-f-formato', sortAlpha(formatos));
   window._setupMS('ind-f-tipologia', sortAlpha(tipologias));
 
+  window._setupMS('ind-f-coordinador', sortAlpha(coordinadores));
+  window._setupMS('ind-f-ciudad-sede', sortAlpha(ciudadesSede));
+  window._setupMS('ind-f-forma-atencion', sortAlpha(formasAtencion));
+  window._setupMS('ind-f-grupo-falla', sortAlpha(gruposFalla));
+  window._setupMS('ind-f-urgencia', sortAlpha(urgencias));
+  window._setupMS('ind-f-tipo-sede', sortAlpha(tiposSede));
+
   const sortedAnios = Array.from(anios).sort((a, b) => b - a);
   window._setupMS('ind-f-anio', sortedAnios);
 
@@ -820,6 +852,14 @@ function getFilteredIndData(tab) {
   const tipologiaSels = window._msGetSels('ind-f-tipologia');
   const anioSels = window._msGetSels('ind-f-anio');
   const mesSels = window._msGetSels('ind-f-mes');
+
+  // 6 Nuevos Segmentadores
+  const coordinadorSels = window._msGetSels('ind-f-coordinador');
+  const ciudadSedeSels = window._msGetSels('ind-f-ciudad-sede');
+  const formaAtencionSels = window._msGetSels('ind-f-forma-atencion');
+  const grupoFallaSels = window._msGetSels('ind-f-grupo-falla');
+  const urgenciaSels = window._msGetSels('ind-f-urgencia');
+  const tipoSedeSels = window._msGetSels('ind-f-tipo-sede');
 
   // Nuevos filtros de texto globales
   const globalCb = (document.getElementById('ind-f-cod-punto')?.value || '').toLowerCase().trim();
@@ -904,6 +944,40 @@ function getFilteredIndData(tab) {
       }
     }
 
+    // Coordinador Encargado
+    if (coordinadorSels) {
+      const v = (r['COORDINADOR ENCARGADO'] || '').toString().trim().toUpperCase();
+      if (!coordinadorSels.includes(v)) return false;
+    }
+    // Ciudad Sede
+    if (ciudadSedeSels) {
+      const v = (r['CIUDAD SEDE'] || '').toString().trim().toUpperCase();
+      if (!ciudadSedeSels.includes(v)) return false;
+    }
+    // Forma de Atención
+    if (formaAtencionSels) {
+      const formaCol = r['FORMA DE ATENCIÓN'] ? 'FORMA DE ATENCIÓN' : (r['FORMA DE ATENCION'] ? 'FORMA DE ATENCION' : (r['TIPO DE ATENCIÓN'] ? 'TIPO DE ATENCIÓN' : 'TIPO DE ATENCION'));
+      const v = (r[formaCol] || '').toString().trim().toUpperCase();
+      if (!formaAtencionSels.includes(v)) return false;
+    }
+    // Grupo de Falla
+    if (grupoFallaSels) {
+      const grupoCol = r['GRUPO_FALLA'] ? 'GRUPO_FALLA' : 'GRUPO FALLA';
+      const v = (r[grupoCol] || '').toString().trim().toUpperCase();
+      if (!grupoFallaSels.includes(v)) return false;
+    }
+    // Urgencia
+    if (urgenciaSels) {
+      const v = (r['URGENCIA'] || '').toString().trim().toUpperCase();
+      if (!urgenciaSels.includes(v)) return false;
+    }
+    // Tipo / Trayecto
+    if (tipoSedeSels) {
+      const tipoCol = r['TIPO'] ? 'TIPO' : (r['MIXTO/PURO'] ? 'MIXTO/PURO' : (r['TIPO DE ATENCIÓN'] ? 'TIPO DE ATENCIÓN' : 'TIPO DE ATENCION'));
+      const v = (r[tipoCol] || '').toString().trim().toUpperCase();
+      if (!tipoSedeSels.includes(v)) return false;
+    }
+
     // Global Código de Punto (CB)
     if (globalCb) {
       const cbKeys = ['CB', 'CÓDIGO CB', 'CODIGO CB', 'CÓDIGO PUNTO', 'CODIGO PUNTO', 'CDIGO CB', 'CDIGO PUNTO'];
@@ -932,7 +1006,21 @@ function populateIndFilters(tab) {
   // Obsoleto: los filtros son multiselección y se inicializan una vez al cargar datos
 }
 
+function _clearTableFilters() {
+  const tabs = ['cierres', 'papeleria', 'otras-oc', 'implementacion', 'incidentes'];
+  tabs.forEach(t => {
+    ['estado', 'sla', 'resp', 'depto', 'causal'].forEach(f => {
+      const el = document.getElementById(`ind-col-f-${f}-${t}`);
+      if (el) {
+        delete el.dataset.populated;
+        el.value = '';
+      }
+    });
+  });
+}
+
 window.indApplyFilters = function () {
+  _clearTableFilters();
   Object.keys(IND_PAGES).forEach(k => IND_PAGES[k] = 1);
   const activeTab = window.currentActiveIndTab || 'cierres';
   _indRender(activeTab);
@@ -940,10 +1028,13 @@ window.indApplyFilters = function () {
 };
 
 window.indResetFilters = function () {
+  _clearTableFilters();
   const ids = [
     'ind-f-depto', 'ind-f-ciudad', 'ind-f-red', 'ind-f-estado',
     'ind-f-sla', 'ind-f-tecnico', 'ind-f-tipo-act', 'ind-f-responsable',
-    'ind-f-formato', 'ind-f-tipologia', 'ind-f-anio', 'ind-f-mes'
+    'ind-f-formato', 'ind-f-tipologia', 'ind-f-anio', 'ind-f-mes',
+    'ind-f-coordinador', 'ind-f-ciudad-sede', 'ind-f-forma-atencion',
+    'ind-f-grupo-falla', 'ind-f-urgencia', 'ind-f-tipo-sede'
   ];
   ids.forEach(id => {
     if (typeof window._msAction === 'function') {
@@ -1023,12 +1114,84 @@ function _getDetailTableColumns(tab) {
   return [diasCol, ...rawCols];
 }
 
+function _populateTableFilters(tab, rows) {
+  const estadoSel = document.getElementById(`ind-col-f-estado-${tab}`);
+  const slaSel = document.getElementById(`ind-col-f-sla-${tab}`);
+  const respSel = document.getElementById(`ind-col-f-resp-${tab}`);
+  const deptoSel = document.getElementById(`ind-col-f-depto-${tab}`);
+  const causalSel = document.getElementById(`ind-col-f-causal-${tab}`);
+
+  const unique = (field) => {
+    const vals = new Set();
+    rows.forEach(r => {
+      const v = r[field];
+      if (v !== undefined && v !== null && v.toString().trim() !== '') {
+        vals.add(v.toString().trim());
+      }
+    });
+    return Array.from(vals).sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+  };
+
+  // 1. Estado
+  if (estadoSel && !estadoSel.dataset.populated) {
+    const vals = unique('ESTADO');
+    estadoSel.innerHTML = '<option value="">🌎 Estado: Todos</option>' + 
+      vals.map(v => `<option value="${v}">${v}</option>`).join('');
+    estadoSel.dataset.populated = 'true';
+  }
+
+  // 2. SLA
+  if (slaSel && !slaSel.dataset.populated) {
+    const slaCol = tab === 'implementacion' ? 'CUMPLE SLA' : (tab === 'incidentes' ? 'DENTRO DE LOS SLAS' : 'DENTRO DE LOS SLA');
+    const vals = unique(slaCol);
+    slaSel.innerHTML = '<option value="">⏱ SLA: Todos</option>' + 
+      vals.map(v => `<option value="${v}">${v}</option>`).join('');
+    slaSel.dataset.populated = 'true';
+  }
+
+  // 3. Responsable
+  if (respSel && !respSel.dataset.populated) {
+    const respCol = tab === 'implementacion' ? 'OBSERVACIÓN ESTANDAR' : (tab === 'incidentes' ? 'RESPONSABLE DE INCUMPLIMIENTO' : 'RESPONSABLE INCUMPLIMIENTO');
+    const vals = unique(respCol);
+    respSel.innerHTML = '<option value="">👤 Responsable: Todos</option>' + 
+      vals.map(v => `<option value="${v}">${v}</option>`).join('');
+    respSel.dataset.populated = 'true';
+  }
+
+  // 4. Departamento
+  if (deptoSel && !deptoSel.dataset.populated) {
+    const vals = unique('DEPARTAMENTO');
+    deptoSel.innerHTML = '<option value="">📍 Depto: Todos</option>' + 
+      vals.map(v => `<option value="${v}">${v}</option>`).join('');
+    deptoSel.dataset.populated = 'true';
+  }
+
+  // 5. Causal
+  if (causalSel && !causalSel.dataset.populated) {
+    const causalCol = tab === 'implementacion' ? 'PRIMER CAUSAL  DE INCUMPLIMIENTO' : (tab === 'incidentes' ? 'CAUSAL INICIAL' : 'CAUSAL');
+    const vals = unique(causalCol);
+    causalSel.innerHTML = '<option value="">💡 Causal: Todos</option>' + 
+      vals.map(v => `<option value="${v}">${v}</option>`).join('');
+    causalSel.dataset.populated = 'true';
+  }
+}
+
 function _renderDetailTableOnly(tab) {
   const filteredData = getFilteredIndData(tab);
+
+  // Populate dynamic select dropdowns for table filters
+  _populateTableFilters(tab, filteredData);
 
   const search = (document.getElementById(`ind-search-${tab}`)?.value || '').toLowerCase().trim();
   const cbFilter = (document.getElementById(`ind-col-f-cb-${tab}`)?.value || '').toLowerCase().trim();
   const ticketFilter = (document.getElementById(`ind-col-f-ticket-${tab}`)?.value || '').toLowerCase().trim();
+
+  // Retrieve values of new 5 select dropdowns
+  const estadoFilter = document.getElementById(`ind-col-f-estado-${tab}`)?.value || '';
+  const slaFilter = document.getElementById(`ind-col-f-sla-${tab}`)?.value || '';
+  const respFilter = document.getElementById(`ind-col-f-resp-${tab}`)?.value || '';
+  const deptoFilter = document.getElementById(`ind-col-f-depto-${tab}`)?.value || '';
+  const causalFilter = document.getElementById(`ind-col-f-causal-${tab}`)?.value || '';
 
   const cols = _getDetailTableColumns(tab);
   const searchedData = filteredData.filter(r => {
@@ -1059,6 +1222,34 @@ function _renderDetailTableOnly(tab) {
         return v && v.toString().toLowerCase().includes(ticketFilter);
       });
       if (!ticketMatch) return false;
+    }
+
+    // 4. Filtro de Estado
+    if (estadoFilter) {
+      if ((r['ESTADO'] || '').toString().trim() !== estadoFilter) return false;
+    }
+
+    // 5. Filtro de SLA
+    if (slaFilter) {
+      const slaCol = tab === 'implementacion' ? 'CUMPLE SLA' : (tab === 'incidentes' ? 'DENTRO DE LOS SLAS' : 'DENTRO DE LOS SLA');
+      if ((r[slaCol] || '').toString().trim() !== slaFilter) return false;
+    }
+
+    // 6. Filtro de Responsable
+    if (respFilter) {
+      const respCol = tab === 'implementacion' ? 'OBSERVACIÓN ESTANDAR' : (tab === 'incidentes' ? 'RESPONSABLE DE INCUMPLIMIENTO' : 'RESPONSABLE INCUMPLIMIENTO');
+      if ((r[respCol] || '').toString().trim() !== respFilter) return false;
+    }
+
+    // 7. Filtro de Departamento
+    if (deptoFilter) {
+      if ((r['DEPARTAMENTO'] || '').toString().trim() !== deptoFilter) return false;
+    }
+
+    // 8. Filtro de Causal
+    if (causalFilter) {
+      const causalCol = tab === 'implementacion' ? 'PRIMER CAUSAL  DE INCUMPLIMIENTO' : (tab === 'incidentes' ? 'CAUSAL INICIAL' : 'CAUSAL');
+      if ((r[causalCol] || '').toString().trim() !== causalFilter) return false;
     }
 
     return true;
