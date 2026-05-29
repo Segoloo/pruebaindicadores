@@ -409,20 +409,38 @@ function _slaRow(rows, field) {
 const _FACTORES_EXTERNOS = ['USUARIOS', 'FACTOR_EXTERNO'];
 
 function _slaAjustado(rows, slaField, respField) {
-  const sinExt = rows.filter(r => {
-    const v = (r[respField] || '').toString().toUpperCase().trim();
-    return !_FACTORES_EXTERNOS.includes(v);
-  });
-  const cumple = sinExt.filter(r => (r[slaField] || '').toString().toUpperCase() === 'SI').length;
-  const base = sinExt.length;
-  return { cumple, base, pct: _indPct(cumple, base) };
+  const total = rows.length;
+  if (!total) return { cumple: 0, base: 0, pct: '100.0%' };
+
+  // Para incidentes el segundo responsable es WOMPI, para los demás es LARED
+  const respVal2 = respField === 'RESPONSABLE DE INCUMPLIMIENTO' ? 'WOMPI' : 'LARED';
+
+  const fallasLC = rows.filter(r => 
+    (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+    (r[respField] || '').toString().toUpperCase().trim() === 'LINEACOM'
+  ).length;
+
+  const fallasLR = rows.filter(r => 
+    (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+    (r[respField] || '').toString().toUpperCase().trim() === respVal2
+  ).length;
+
+  const cumple = total - fallasLC - fallasLR;
+  return { cumple, base: total, pct: _indPct(cumple, total) };
 }
 
-// Cumplimiento SLA filtrado sólo a LINEACOM o LARED
+// Cumplimiento SLA filtrado sólo a LINEACOM o LARED (basado en total - fallas)
 function _slaPorResponsable(rows, slaField, respField, respVal) {
-  const sub = rows.filter(r => (r[respField] || '').toString().toUpperCase().trim() === respVal);
-  const cumple = sub.filter(r => (r[slaField] || '').toString().toUpperCase() === 'SI').length;
-  return { cumple, base: sub.length, pct: _indPct(cumple, sub.length) };
+  const total = rows.length;
+  if (!total) return { cumple: 0, base: 0, pct: '100.0%' };
+
+  const fallas = rows.filter(r => 
+    (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+    (r[respField] || '').toString().toUpperCase().trim() === respVal
+  ).length;
+
+  const cumple = total - fallas;
+  return { cumple, base: total, pct: _indPct(cumple, total) };
 }
 
 // Gráfica horizontal de responsables de incumplimiento
@@ -1296,114 +1314,129 @@ window.openKpiWizard = function (tab, label) {
   let kpiRows = [];
   const normLabel = label.toUpperCase().trim();
 
-  // Mapear el KPI a su respectivo subconjunto de filas filtradas
-  if (tab === 'cierres') {
-    if (normLabel.includes('TOTAL')) kpiRows = todos;
-    else if (normLabel.includes('CERRADO')) kpiRows = todos.filter(r => !r._is_abierto);
-    else if (normLabel.includes('ABIERTO')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
-    else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
-    else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
-    else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    });
-    else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    });
-    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
-    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
-    else kpiRows = todos;
+  const slaField = tab === 'incidentes' ? 'DENTRO DE LOS SLAS' : 'DENTRO DE LOS SLA';
+  const respField = tab === 'incidentes' ? 'RESPONSABLE DE INCUMPLIMIENTO' : 'RESPONSABLE INCUMPLIMIENTO';
+  const respVal2 = tab === 'incidentes' ? 'WOMPI' : 'LARED';
+
+  let handled = false;
+  if (normLabel.includes('AJUSTADO')) {
+    kpiRows = todos.filter(r => 
+      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+      ['LINEACOM', respVal2].includes((r[respField] || '').toString().toUpperCase().trim())
+    );
+    handled = true;
+  } else if (normLabel.includes('LINEACOM') || (normLabel.includes('LÍNEA') && normLabel.includes('CUMPL'))) {
+    kpiRows = todos.filter(r => 
+      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+      (r[respField] || '').toString().toUpperCase().trim() === 'LINEACOM'
+    );
+    handled = true;
+  } else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) {
+    kpiRows = todos.filter(r => 
+      (r[slaField] || '').toString().toUpperCase().trim() === 'NO' &&
+      (r[respField] || '').toString().toUpperCase().trim() === respVal2
+    );
+    handled = true;
   }
-  else if (tab === 'papeleria') {
-    if (normLabel.includes('TOTAL')) kpiRows = todos;
-    else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
-    else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('DENTRO') || (normLabel.includes('CUMPLE') && !normLabel.includes('AJUSTADO') && !normLabel.includes('LINEACOM') && !normLabel.includes('LARED') && !normLabel.includes('RED'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
-    else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
-    else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
-    else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    });
-    else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    });
-    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
-    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
-    else kpiRows = todos;
-  }
-  else if (tab === 'otras-oc') {
-    if (normLabel.includes('TOTAL')) kpiRows = todos;
-    else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
-    else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('TRASLADO')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'TRASLADO');
-    else if (normLabel.includes('PUBLICIDAD')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PUBLICIDAD');
-    else if (normLabel.includes('PINPAD')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PINPAD');
-    else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
-    else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
-    else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
-    else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    });
-    else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    });
-    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('LINEACOM')) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
-    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
-    else kpiRows = todos;
-  }
-  else if (tab === 'implementacion') {
-    if (normLabel.includes('TOTAL')) kpiRows = todos;
-    else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
-    else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('INCUMPLE') || normLabel.includes('FUERA') || normLabel === 'NO CUMPLE SLA') kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO');
-    else if (normLabel.includes('CUMPLE') || normLabel.includes('DENTRO')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('CAUSAL')) kpiRows = todos.filter(r => {
-      const v = (r['PRIMER CAUSAL  DE INCUMPLIMIENTO'] || r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
-      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
-    });
-    else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'IMPLEMENTADO';
-    });
-    else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    });
-    else kpiRows = todos;
-  }
-  else if (tab === 'incidentes') {
-    if (normLabel.includes('TOTAL')) kpiRows = todos;
-    else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
-    else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
-    else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'NO');
-    else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
-    else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
-    else if (normLabel.includes('GRAL') || (normLabel.includes('CUMPL') && normLabel.includes('GRAL'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('AJUSTADO')) kpiRows = todos.filter(r => !_FACTORES_EXTERNOS.includes((r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim()) && (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
-    else if (normLabel.includes('LINEACOM') || (normLabel.includes('LÍNEA') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LINEACOM');
-    else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) kpiRows = todos.filter(r => (r['RESPONSABLE DE INCUMPLIMIENTO'] || '').toString().toUpperCase().trim() === 'LARED');
-    else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'CERRADO';
-    });
-    else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    });
-    else kpiRows = todos;
+
+  if (!handled) {
+    // Mapear el KPI a su respectivo subconjunto de filas filtradas
+    if (tab === 'cierres') {
+      if (normLabel.includes('TOTAL')) kpiRows = todos;
+      else if (normLabel.includes('CERRADO')) kpiRows = todos.filter(r => !r._is_abierto);
+      else if (normLabel.includes('ABIERTO')) kpiRows = todos.filter(r => r._is_abierto);
+      else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
+      else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
+      else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
+      else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
+      });
+      else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
+      });
+      else kpiRows = todos;
+    }
+    else if (tab === 'papeleria') {
+      if (normLabel.includes('TOTAL')) kpiRows = todos;
+      else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
+      else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
+      else if (normLabel.includes('DENTRO') || (normLabel.includes('CUMPLE') && !normLabel.includes('AJUSTADO') && !normLabel.includes('LINEACOM') && !normLabel.includes('LARED') && !normLabel.includes('RED'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
+      else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
+      else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
+      else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
+      });
+      else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
+      });
+      else kpiRows = todos;
+    }
+    else if (tab === 'otras-oc') {
+      if (normLabel.includes('TOTAL')) kpiRows = todos;
+      else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
+      else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
+      else if (normLabel.includes('TRASLADO')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'TRASLADO');
+      else if (normLabel.includes('PUBLICIDAD')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PUBLICIDAD');
+      else if (normLabel.includes('PINPAD')) kpiRows = todos.filter(r => (r['SOLICITUD'] || '').toString().toUpperCase() === 'PINPAD');
+      else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLA'] || '').toString().toUpperCase() === 'NO');
+      else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
+      else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
+      else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
+      });
+      else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
+      });
+      else kpiRows = todos;
+    }
+    else if (tab === 'implementacion') {
+      if (normLabel.includes('TOTAL')) kpiRows = todos;
+      else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
+      else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
+      else if (normLabel.includes('INCUMPLE') || normLabel.includes('FUERA') || normLabel === 'NO CUMPLE SLA') kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO');
+      else if (normLabel.includes('CUMPLE') || normLabel.includes('DENTRO')) kpiRows = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('CAUSAL')) kpiRows = todos.filter(r => {
+        const v = (r['PRIMER CAUSAL  DE INCUMPLIMIENTO'] || r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+        return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+      });
+      else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'IMPLEMENTADO';
+      });
+      else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
+      });
+      else kpiRows = todos;
+    }
+    else if (tab === 'incidentes') {
+      if (normLabel.includes('TOTAL')) kpiRows = todos;
+      else if (normLabel.includes('CERRADO') || normLabel.includes('CERRADA')) kpiRows = todos.filter(r => !r._is_abierto);
+      else if (normLabel.includes('ABIERTO') || normLabel.includes('ABIERTA')) kpiRows = todos.filter(r => r._is_abierto);
+      else if (normLabel.includes('DENTRO') || normLabel.includes('CUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('FUERA') || normLabel.includes('INCUMPLE')) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'NO');
+      else if (normLabel.includes('FACTURABLE')) kpiRows = todos.filter(r => _isTrueVal(r['FACTURABLE']));
+      else if (normLabel.includes('ATRIBUIBLE')) kpiRows = todos.filter(r => _isTrueVal(r['ATRIBUIBLE']));
+      else if (normLabel.includes('GRAL') || (normLabel.includes('CUMPL') && normLabel.includes('GRAL'))) kpiRows = todos.filter(r => (r['DENTRO DE LOS SLAS'] || '').toString().toUpperCase() === 'SI');
+      else if (normLabel.includes('EXITOS')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO' || s === 'CERRADO';
+      });
+      else if (normLabel.includes('LOCALIZA')) kpiRows = todos.filter(r => {
+        const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
+        return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
+      });
+      else kpiRows = todos;
+    }
   }
 
   WIZARD_ROWS = kpiRows;
@@ -1413,7 +1446,17 @@ window.openKpiWizard = function (tab, label) {
 
   const tLabel = tab.toUpperCase().replace('-', ' ');
   document.getElementById('ind-wizard-title').textContent = `${label} (${tLabel})`;
-  document.getElementById('ind-wizard-subtitle').textContent = `Total de registros filtrados bajo este KPI: ${kpiRows.length}`;
+
+  let subtitleText = `Total de registros filtrados bajo este KPI: ${kpiRows.length}`;
+  if (normLabel.includes('LINEACOM')) {
+    subtitleText = `Registros con incumplimiento de SLA atribuido a LINEACOM (${kpiRows.length} fallas detectadas sobre un total de ${todos.length} gestiones)`;
+  } else if (normLabel.includes('LARED') || (normLabel.includes('RED') && normLabel.includes('CUMPL'))) {
+    const operatorName = tab === 'incidentes' ? 'WOMPI' : 'LARED';
+    subtitleText = `Registros con incumplimiento de SLA atribuido a ${operatorName} (${kpiRows.length} fallas detectadas sobre un total de ${todos.length} gestiones)`;
+  } else if (normLabel.includes('AJUSTADO')) {
+    subtitleText = `Fallas totales de SLA atribuibles a los operadores (LINEACOM / ${tab === 'incidentes' ? 'WOMPI' : 'LARED'}): ${kpiRows.length} registros`;
+  }
+  document.getElementById('ind-wizard-subtitle').textContent = subtitleText;
 
   const searchInput = document.getElementById('ind-wizard-search');
   if (searchInput) {
@@ -1634,24 +1677,9 @@ function renderIndCierres() {
     const _ci_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
     const _ci_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
     kpisEl.innerHTML +=
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
-        <div class="ind-kpi-icon">📐</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_ci_aj.pct}</div>
-        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
-        <div class="ind-kpi-sub">${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)} (sin factores ext.)</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
-        <div class="ind-kpi-icon">🔗</div>
-        <div class="ind-kpi-value" style="color:#99D1FC">${_ci_lc.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
-        <div class="ind-kpi-sub">${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
-        <div class="ind-kpi-icon">📡</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_ci_lr.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
-        <div class="ind-kpi-sub">${_indFmt(_ci_lr.cumple)} / ${_indFmt(_ci_lr.base)}</div>
-      </div>`;
+      _kpiCard('% Cumpl SLA Ajustado', _ci_aj.pct, `${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)}`, '#B0F2AE', '📐', 'cierres') +
+      _kpiCard('% Cumpl LINEACOM', _ci_lc.pct, `${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}`, '#99D1FC', '🔗', 'cierres') +
+      _kpiCard('% Cumpl LARED (Red)', _ci_lr.pct, `${_indFmt(_ci_lr.cumple)} / ${_indFmt(_ci_lr.base)}`, '#B0F2AE', '📡', 'cierres');
   }
 
   // Responsables de incumplimiento
@@ -1739,24 +1767,9 @@ function renderIndPapeleria() {
     const _pp_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
     const _pp_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
     kpisEl.innerHTML +=
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
-        <div class="ind-kpi-icon">📐</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_pp_aj.pct}</div>
-        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
-        <div class="ind-kpi-sub">${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)} (sin factores ext.)</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
-        <div class="ind-kpi-icon">🔗</div>
-        <div class="ind-kpi-value" style="color:#99D1FC">${_pp_lc.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
-        <div class="ind-kpi-sub">${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
-        <div class="ind-kpi-icon">📡</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_pp_lr.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
-        <div class="ind-kpi-sub">${_indFmt(_pp_lr.cumple)} / ${_indFmt(_pp_lr.base)}</div>
-      </div>`;
+      _kpiCard('% Cumpl SLA Ajustado', _pp_aj.pct, `${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)}`, '#B0F2AE', '📐', 'papeleria') +
+      _kpiCard('% Cumpl LINEACOM', _pp_lc.pct, `${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}`, '#99D1FC', '🔗', 'papeleria') +
+      _kpiCard('% Cumpl LARED (Red)', _pp_lr.pct, `${_indFmt(_pp_lr.cumple)} / ${_indFmt(_pp_lr.base)}`, '#B0F2AE', '📡', 'papeleria');
   }
 
   // Responsables de incumplimiento — Papelería
@@ -1866,24 +1879,9 @@ function renderIndOtrasOC() {
     const _oc_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
     const _oc_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
     kpisEl.innerHTML +=
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.3);">
-        <div class="ind-kpi-icon">📐</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_oc_aj.pct}</div>
-        <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
-        <div class="ind-kpi-sub">${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)} (sin factores ext.)</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
-        <div class="ind-kpi-icon">🔗</div>
-        <div class="ind-kpi-value" style="color:#99D1FC">${_oc_lc.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LINEACOM</div>
-        <div class="ind-kpi-sub">${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}</div>
-      </div>` +
-      `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
-        <div class="ind-kpi-icon">📡</div>
-        <div class="ind-kpi-value" style="color:#B0F2AE">${_oc_lr.pct}</div>
-        <div class="ind-kpi-label">% Cumpl LARED (Red)</div>
-        <div class="ind-kpi-sub">${_indFmt(_oc_lr.cumple)} / ${_indFmt(_oc_lr.base)}</div>
-      </div>`;
+      _kpiCard('% Cumpl SLA Ajustado', _oc_aj.pct, `${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)}`, '#B0F2AE', '📐', 'otras-oc') +
+      _kpiCard('% Cumpl LINEACOM', _oc_lc.pct, `${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}`, '#99D1FC', '🔗', 'otras-oc') +
+      _kpiCard('% Cumpl LARED (Red)', _oc_lr.pct, `${_indFmt(_oc_lr.cumple)} / ${_indFmt(_oc_lr.base)}`, '#B0F2AE', '📡', 'otras-oc');
   }
 
   // Responsables de incumplimiento — Otras OC
@@ -2087,30 +2085,10 @@ function renderIndIncidentes() {
   const _inc_lr = _slaPorResponsable(todos, _INC_SLA, _INC_RESP, 'LARED');
 
   if (kpisEl) kpisEl.innerHTML +=
-    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.25);">
-      <div class="ind-kpi-icon">📊</div>
-      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_pctGral}</div>
-      <div class="ind-kpi-label">% Cumpl Gral WOMPI</div>
-      <div class="ind-kpi-sub">${_indFmt(_inc_cumplGral)} / ${_indFmt(total)}</div>
-    </div>` +
-    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.4);">
-      <div class="ind-kpi-icon">📐</div>
-      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_aj.pct}</div>
-      <div class="ind-kpi-label">% Cumpl SLA Ajustado</div>
-      <div class="ind-kpi-sub">${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)} (sin factores ext.)</div>
-    </div>` +
-    `<div class="ind-kpi-card" style="border-color:rgba(153,209,252,.3);">
-      <div class="ind-kpi-icon">🔗</div>
-      <div class="ind-kpi-value" style="color:#99D1FC">${_inc_lc.pct}</div>
-      <div class="ind-kpi-label">% Cumpl Línea (LINEACOM)</div>
-      <div class="ind-kpi-sub">${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}</div>
-    </div>` +
-    `<div class="ind-kpi-card" style="border-color:rgba(176,242,174,.2);">
-      <div class="ind-kpi-icon">📡</div>
-      <div class="ind-kpi-value" style="color:#B0F2AE">${_inc_lr.pct}</div>
-      <div class="ind-kpi-label">% Cumpl Red (LARED)</div>
-      <div class="ind-kpi-sub">${_indFmt(_inc_lr.cumple)} / ${_indFmt(_inc_lr.base)}</div>
-    </div>`;
+    _kpiCard('% Cumpl Gral WOMPI', _inc_pctGral, `${_indFmt(_inc_cumplGral)} / ${_indFmt(total)}`, '#B0F2AE', '📊', 'incidentes') +
+    _kpiCard('% Cumpl SLA Ajustado', _inc_aj.pct, `${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)}`, '#B0F2AE', '📐', 'incidentes') +
+    _kpiCard('% Cumpl Línea (LINEACOM)', _inc_lc.pct, `${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}`, '#99D1FC', '🔗', 'incidentes') +
+    _kpiCard('% Cumpl Red (LARED)', _inc_lr.pct, `${_indFmt(_inc_lr.cumple)} / ${_indFmt(_inc_lr.base)}`, '#B0F2AE', '📡', 'incidentes');
 
   // Gráfica responsables de incumplimiento — Incidentes (campo con "DE")
   _responsableChart('ind-inc-chart-responsable', todos, 'RESPONSABLE DE INCUMPLIMIENTO', 'Responsable Incumplimiento');
