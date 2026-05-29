@@ -1866,6 +1866,10 @@
                   <div id="ind-f-formato" class="ms-container" data-placeholder="Todos"></div>
                 </div>
                 <div class="filter-group">
+                  <label>Tipología</label>
+                  <div id="ind-f-tipologia" class="ms-container" data-placeholder="Todas"></div>
+                </div>
+                <div class="filter-group">
                   <label>Año</label>
                   <div id="ind-f-anio" class="ms-container" data-placeholder="Todos"></div>
                 </div>
@@ -2101,9 +2105,9 @@
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
-                    <div class="ind-chart-title">Por Formato (Top 8)</div>
+                    <div class="ind-chart-title">Por Estado</div>
                   </div>
-                  <div class="ind-chart-wrap"><canvas id="ind-otras-chart-sol"></canvas></div>
+                  <div class="ind-chart-wrap"><canvas id="ind-otras-chart-estado"></canvas></div>
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
@@ -2243,13 +2247,20 @@
                 </div>
               </div>
               <div class="ind-charts-grid-2"
-                style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px;">
+                style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px;">
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
-                    <div class="ind-chart-title">🚗 Forma de Atención</div>
-                    <div class="ind-chart-sub">Visita Técnica vs Soporte Telefónico vs Otros</div>
+                    <div class="ind-chart-title">🔍 Segundo Causal de Incumplimiento</div>
+                    <div class="ind-chart-sub">Distribución por causal secundario reportado</div>
                   </div>
-                  <div class="ind-chart-wrap" style="height:200px;"><canvas id="ind-impl-chart-forma"></canvas></div>
+                  <div class="ind-chart-wrap" style="height:240px;"><canvas id="ind-impl-chart-segundo-causal"></canvas></div>
+                </div>
+                <div class="ind-chart-card">
+                  <div class="ind-chart-header">
+                    <div class="ind-chart-title">👥 Responsable de Incumplimiento</div>
+                    <div class="ind-chart-sub">Distribución por Observación Estándar (LINEA, WOMPI, etc.)</div>
+                  </div>
+                  <div class="ind-chart-wrap" style="height:240px;"><canvas id="ind-impl-chart-obs-estandar"></canvas></div>
                 </div>
               </div>
               <div class="ind-charts-grid-2">
@@ -2307,9 +2318,9 @@
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
-                    <div class="ind-chart-title">Por Categoría</div>
+                    <div class="ind-chart-title">Por Estado</div>
                   </div>
-                  <div class="ind-chart-wrap"><canvas id="ind-inc-chart-cat"></canvas></div>
+                  <div class="ind-chart-wrap"><canvas id="ind-inc-chart-estado"></canvas></div>
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
@@ -2328,9 +2339,9 @@
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">
-                    <div class="ind-chart-title">Por Urgencia</div>
+                    <div class="ind-chart-title">Causal Inicial (Top 8)</div>
                   </div>
-                  <div class="ind-chart-wrap"><canvas id="ind-inc-chart-urg"></canvas></div>
+                  <div class="ind-chart-wrap"><canvas id="ind-inc-chart-causal-inicial"></canvas></div>
                 </div>
                 <div class="ind-chart-card">
                   <div class="ind-chart-header">

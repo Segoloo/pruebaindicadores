@@ -336,67 +336,90 @@ function _deptoChart(id, rows, label, color) {
 // Usa un bar chart horizontal con colores semánticos por tipo.
 // ─────────────────────────────────────────────────────────────────
 function _formaAtencionChart(id, rows, col) {
+  _destroyChart(id);
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  if (!parent) return;
+
   col = col || 'FORMA DE ATENCIÓN';
   const raw = _countBy(rows.filter(r => r[col] && r[col].toString().trim() !== '0' && r[col].toString().trim() !== ''), col);
-  const entries = _topN(raw, 8);
-  if (!entries.length) return;
-
-  // Colores semánticos por tipo de forma
-  const COLOR_MAP = {
-    'VISITA_TÉCNICA': '#99D1FC',
-    'VISITA_TECNICA': '#99D1FC',
-    'VISITA TÉCNICA': '#99D1FC',
-    'VISITA TECNICA': '#99D1FC',
-    'SOPORTE_TELEFÓNICO': '#DFFF61',
-    'SOPORTE_TELEFONICO': '#DFFF61',
-    'SOPORTE TELEFÓNICO': '#DFFF61',
-    'SOPORTE TELEFONICO': '#DFFF61',
-    'SOPORTE_REMOTO': '#B0F2AE',
-    'SOPORTE REMOTO': '#B0F2AE',
-    'ENVIO_GUIA': '#99D1FC',
-    'ENVIO GUIA': '#99D1FC',
-    'GUIA': '#99D1FC',
-  };
-  const total = entries.reduce((s, [, n]) => s + n, 0);
-  const bgColors = entries.map(([k]) =>
-    COLOR_MAP[k.toUpperCase().trim()] || '#B0F2AE'
-  );
-
-  _mkChart(id, 'bar',
-    entries.map(([k]) => k),
-    [{
-      label: 'Gestiones',
-      data: entries.map(([, n]) => n),
-      backgroundColor: bgColors,
-      borderRadius: 6,
-      borderSkipped: false,
-    }],
-    {
-      indexAxis: 'y',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: function (ctx) {
-              const val = ctx.raw || 0;
-              const pct = total ? ((val / total) * 100).toFixed(1) + '%' : '0%';
-              return ` ${val.toLocaleString('es-CO')} gestiones (${pct})`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#94a3b8', font: { size: 10 } },
-          grid: { color: 'rgba(255,255,255,0.05)' }
-        },
-        y: {
-          ticks: { color: '#FAFAFA', font: { size: 11, weight: '600' } },
-          grid: { display: false }
-        }
-      }
+  
+  // Agrupar
+  let visita = 0;
+  let soporte = 0;
+  let otros = 0;
+  
+  Object.entries(raw).forEach(([k, n]) => {
+    const key = k.toUpperCase().trim();
+    if (key.includes('VISITA')) {
+      visita += n;
+    } else if (key.includes('TELEF') || key.includes('LLAMADA')) {
+      soporte += n;
+    } else {
+      otros += n;
     }
-  );
+  });
+  
+  const total = visita + soporte + otros;
+  const pctVisita = total ? ((visita / total) * 100).toFixed(1) : '0.0';
+  const pctSoporte = total ? ((soporte / total) * 100).toFixed(1) : '0.0';
+  const pctOtros = total ? ((otros / total) * 100).toFixed(1) : '0.0';
+  
+  parent.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 14px; padding: 5px 0; font-family: 'Outfit', sans-serif; height: 100%; justify-content: center;">
+      <!-- Row 1: Cards with large indicators -->
+      <div style="display: flex; gap: 12px; width: 100%;">
+        
+        <!-- Visita Card -->
+        <div style="flex: 1; background: rgba(153, 209, 252, 0.05); border: 1px solid rgba(153, 209, 252, 0.2); border-radius: 12px; padding: 12px 14px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+          <div style="position: absolute; top: -10px; right: -10px; font-size: 40px; opacity: 0.08;">🚗</div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 16px;">🚗</span>
+            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Visita Técnica</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 800; color: #99D1FC; line-height: 1.1;">${pctVisita}%</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${_indFmt(visita)} gestiones</div>
+        </div>
+
+        <!-- Soporte Card -->
+        <div style="flex: 1; background: rgba(223, 255, 97, 0.05); border: 1px solid rgba(223, 255, 97, 0.2); border-radius: 12px; padding: 12px 14px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+          <div style="position: absolute; top: -10px; right: -10px; font-size: 40px; opacity: 0.08;">📞</div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 16px;">📞</span>
+            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Soporte Telef.</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 800; color: #DFFF61; line-height: 1.1;">${pctSoporte}%</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${_indFmt(soporte)} gestiones</div>
+        </div>
+
+        <!-- Otros Card -->
+        <div style="flex: 1; background: rgba(176, 242, 174, 0.05); border: 1px solid rgba(176, 242, 174, 0.2); border-radius: 12px; padding: 12px 14px; text-align: center; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.25);">
+          <div style="position: absolute; top: -10px; right: -10px; font-size: 40px; opacity: 0.08;">🖥️</div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 16px;">🖥️</span>
+            <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Remoto / Otros</span>
+          </div>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 800; color: #B0F2AE; line-height: 1.1;">${pctOtros}%</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${_indFmt(otros)} gestiones</div>
+        </div>
+
+      </div>
+
+      <!-- Row 2: Unified Progress Bar with segment overlays -->
+      <div style="margin-top: 4px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: #94a3b8; font-weight: 600;">
+          <span>Distribución Unificada</span>
+          <span style="color: #FAFAFA; font-family: 'JetBrains Mono', monospace;">Total: ${_indFmt(total)}</span>
+        </div>
+        <div style="height: 12px; background: rgba(255,255,255,0.06); border-radius: 6px; display: flex; overflow: hidden; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="width: ${pctVisita}%; background: linear-gradient(90deg, #60a5fa, #99D1FC); transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);" title="Visita Técnica: ${pctVisita}%"></div>
+          <div style="width: ${pctSoporte}%; background: linear-gradient(90deg, #eab308, #DFFF61); transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);" title="Soporte Telefónico: ${pctSoporte}%"></div>
+          <div style="width: ${pctOtros}%; background: linear-gradient(90deg, #22c55e, #B0F2AE); transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);" title="Remoto / Otros: ${pctOtros}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function _slaRow(rows, field) {
@@ -571,6 +594,7 @@ function initIndicadoresFilters() {
   const tipoActs = new Set();
   const responsables = new Set();
   const formatos = new Set();
+  const tipologias = new Set();
   const anios = new Set();
   const meses = new Set();
 
@@ -598,6 +622,7 @@ function initIndicadoresFilters() {
       }
 
       if (r['FORMATO']) formatos.add(r['FORMATO'].toString().trim());
+      if (r['TIPOLOGIA']) tipologias.add(r['TIPOLOGIA'].toString().trim());
 
       const dateVal = r['FECHA DE APERTURA (DD/MM/AAAA)'] ||
         r['FECHA DE INICIO'] ||
@@ -625,6 +650,7 @@ function initIndicadoresFilters() {
   window._setupMS('ind-f-tipo-act', sortAlpha(tipoActs));
   window._setupMS('ind-f-responsable', sortAlpha(responsables));
   window._setupMS('ind-f-formato', sortAlpha(formatos));
+  window._setupMS('ind-f-tipologia', sortAlpha(tipologias));
 
   const sortedAnios = Array.from(anios).sort((a, b) => b - a);
   window._setupMS('ind-f-anio', sortedAnios);
@@ -648,6 +674,7 @@ function getFilteredIndData(tab) {
   const tipoActSels = window._msGetSels('ind-f-tipo-act');
   const responsableSels = window._msGetSels('ind-f-responsable');
   const formatoSels = window._msGetSels('ind-f-formato');
+  const tipologiaSels = window._msGetSels('ind-f-tipologia');
   const anioSels = window._msGetSels('ind-f-anio');
   const mesSels = window._msGetSels('ind-f-mes');
 
@@ -704,6 +731,11 @@ function getFilteredIndData(tab) {
     if (formatoSels) {
       const v = (r['FORMATO'] || '').toString().trim().toUpperCase();
       if (!formatoSels.includes(v)) return false;
+    }
+    // 9.1 Tipología
+    if (tipologiaSels) {
+      const v = (r['TIPOLOGIA'] || '').toString().trim().toUpperCase();
+      if (!tipologiaSels.includes(v)) return false;
     }
     // 10 y 11. Año y Mes
     if (anioSels || mesSels) {
@@ -768,7 +800,7 @@ window.indResetFilters = function () {
   const ids = [
     'ind-f-depto', 'ind-f-ciudad', 'ind-f-red', 'ind-f-estado',
     'ind-f-sla', 'ind-f-tecnico', 'ind-f-tipo-act', 'ind-f-responsable',
-    'ind-f-formato', 'ind-f-anio', 'ind-f-mes'
+    'ind-f-formato', 'ind-f-tipologia', 'ind-f-anio', 'ind-f-mes'
   ];
   ids.forEach(id => {
     if (typeof window._msAction === 'function') {
@@ -1653,33 +1685,16 @@ function renderIndCierres() {
 
   const kpisEl = document.getElementById('ind-cierres-kpis');
   if (kpisEl) {
-    const exitosos = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    }).length;
-    const ilocalizados = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    }).length;
+    const _ci_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _ci_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
 
     kpisEl.innerHTML =
       _kpiCard('Total Cierres', _indFmt(total), '', '#DFFF61', '🔒', 'cierres') +
       _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'cierres') +
       _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'cierres') +
-      _kpiCard('Exitosos', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'cierres') +
-      _kpiCard('No Localizados', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'cierres') +
-      _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'cierres') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'cierres') +
+      _kpiCard('Cumplimiento WOMPI', _ci_aj.pct, `${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)}`, '#B0F2AE', '📐', 'cierres') +
+      _kpiCard('Cumplimiento LINEACOM', _ci_lc.pct, `${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}`, '#99D1FC', '🔗', 'cierres') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'cierres');
-
-    // KPIs SLA ajustado (sin factores externos) + por responsable
-    const _ci_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
-    const _ci_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
-    const _ci_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
-    kpisEl.innerHTML +=
-      _kpiCard('% Cumpl SLA Ajustado', _ci_aj.pct, `${_indFmt(_ci_aj.cumple)} / ${_indFmt(_ci_aj.base)}`, '#B0F2AE', '📐', 'cierres') +
-      _kpiCard('% Cumpl LINEACOM', _ci_lc.pct, `${_indFmt(_ci_lc.cumple)} / ${_indFmt(_ci_lc.base)}`, '#99D1FC', '🔗', 'cierres') +
-      _kpiCard('% Cumpl LARED (Red)', _ci_lr.pct, `${_indFmt(_ci_lr.cumple)} / ${_indFmt(_ci_lr.base)}`, '#B0F2AE', '📡', 'cierres');
   }
 
   // Responsables de incumplimiento
@@ -1743,33 +1758,16 @@ function renderIndPapeleria() {
 
   const kpisEl = document.getElementById('ind-pp-kpis');
   if (kpisEl) {
-    const exitosos = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    }).length;
-    const ilocalizados = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    }).length;
+    const _pp_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _pp_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
 
     kpisEl.innerHTML =
       _kpiCard('Total Papelería', _indFmt(total), '', '#DFFF61', '📦', 'papeleria') +
       _kpiCard('Cerradas', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'papeleria') +
       _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'papeleria') +
-      _kpiCard('Exitosas', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'papeleria') +
-      _kpiCard('No Localizadas', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'papeleria') +
-      _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'papeleria') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'papeleria') +
+      _kpiCard('Cumplimiento WOMPI', _pp_aj.pct, `${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)}`, '#B0F2AE', '📐', 'papeleria') +
+      _kpiCard('Cumplimiento LINEACOM', _pp_lc.pct, `${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}`, '#99D1FC', '🔗', 'papeleria') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'papeleria');
-
-    // KPIs SLA ajustado + por responsable — Papelería (campo: RESPONSABLE INCUMPLIMIENTO sin "DE")
-    const _pp_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
-    const _pp_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
-    const _pp_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
-    kpisEl.innerHTML +=
-      _kpiCard('% Cumpl SLA Ajustado', _pp_aj.pct, `${_indFmt(_pp_aj.cumple)} / ${_indFmt(_pp_aj.base)}`, '#B0F2AE', '📐', 'papeleria') +
-      _kpiCard('% Cumpl LINEACOM', _pp_lc.pct, `${_indFmt(_pp_lc.cumple)} / ${_indFmt(_pp_lc.base)}`, '#99D1FC', '🔗', 'papeleria') +
-      _kpiCard('% Cumpl LARED (Red)', _pp_lr.pct, `${_indFmt(_pp_lr.cumple)} / ${_indFmt(_pp_lr.base)}`, '#B0F2AE', '📡', 'papeleria');
   }
 
   // Responsables de incumplimiento — Papelería
@@ -1852,36 +1850,16 @@ function renderIndOtrasOC() {
 
   const kpisEl = document.getElementById('ind-otras-kpis');
   if (kpisEl) {
-    const exitosos = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'EJECUTADO_EXITOSO' || s === 'EXITOSO';
-    }).length;
-    const ilocalizados = todos.filter(r => {
-      const s = (r['ESTADO'] || '').toString().toUpperCase().trim();
-      return s === 'ILOCALIZADO' || s === 'NO_LOCALIZADO' || s === 'NO LOCALIZADO';
-    }).length;
+    const _oc_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
+    const _oc_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
 
     kpisEl.innerHTML =
       _kpiCard('Total Otras OC', _indFmt(total), '', '#DFFF61', '📋', 'otras-oc') +
       _kpiCard('Cerradas', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'otras-oc') +
       _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'otras-oc') +
-      _kpiCard('Traslados', _indFmt(traslados.length), `SLA: ${trasladoSlaPct}`, '#99D1FC', '🚚', 'otras-oc') +
-      _kpiCard('Publicidad', _indFmt(publicidad.length), `SLA: ${publicidadSlaPct}`, '#DFFF61', '📣', 'otras-oc') +
-      _kpiCard('Pinpad', _indFmt(pinpad.length), `SLA: ${pinpadSlaPct}`, '#99D1FC', '💳', 'otras-oc') +
-      _kpiCard('Exitosas', _indFmt(exitosos), _indPct(exitosos, total), '#00825A', '🏆', 'otras-oc') +
-      _kpiCard('No Localizadas', _indFmt(ilocalizados), _indPct(ilocalizados, total), '#99D1FC', '📍', 'otras-oc') +
-      _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'otras-oc') +
-      _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'otras-oc') +
+      _kpiCard('Cumplimiento WOMPI', _oc_aj.pct, `${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)}`, '#B0F2AE', '📐', 'otras-oc') +
+      _kpiCard('Cumplimiento LINEACOM', _oc_lc.pct, `${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}`, '#99D1FC', '🔗', 'otras-oc') +
       _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'otras-oc');
-
-    // KPIs SLA ajustado + por responsable — Otras OC
-    const _oc_aj = _slaAjustado(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO');
-    const _oc_lc = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LINEACOM');
-    const _oc_lr = _slaPorResponsable(todos, 'DENTRO DE LOS SLA', 'RESPONSABLE INCUMPLIMIENTO', 'LARED');
-    kpisEl.innerHTML +=
-      _kpiCard('% Cumpl SLA Ajustado', _oc_aj.pct, `${_indFmt(_oc_aj.cumple)} / ${_indFmt(_oc_aj.base)}`, '#B0F2AE', '📐', 'otras-oc') +
-      _kpiCard('% Cumpl LINEACOM', _oc_lc.pct, `${_indFmt(_oc_lc.cumple)} / ${_indFmt(_oc_lc.base)}`, '#99D1FC', '🔗', 'otras-oc') +
-      _kpiCard('% Cumpl LARED (Red)', _oc_lr.pct, `${_indFmt(_oc_lr.cumple)} / ${_indFmt(_oc_lr.base)}`, '#B0F2AE', '📡', 'otras-oc');
   }
 
   // Responsables de incumplimiento — Otras OC
@@ -1896,12 +1874,13 @@ function renderIndOtrasOC() {
     { plugins: { legend: { position: 'right', labels: { color: '#CBD5E1', font: { size: 10 } } } } }
   );
 
-  // Distribución por Formato (Top 8)
-  const byFormato = _countBy(todos.filter(r => r['FORMATO']), 'FORMATO');
-  const formatoTop = _topN(byFormato, 8);
-  _mkChart('ind-otras-chart-sol', 'bar', formatoTop.map(x => x[0]),
-    [{ label: 'OC', data: formatoTop.map(x => x[1]), backgroundColor: IND_COLORS.slice(0, formatoTop.length) }],
-    { plugins: { legend: { display: false } }, indexAxis: 'y' }
+  // Por Estado
+  const byEstado = _countBy(todos, 'ESTADO');
+  const estEntries = Object.entries(byEstado);
+  _mkChart('ind-otras-chart-estado', 'doughnut',
+    estEntries.map(x => x[0]),
+    [{ data: estEntries.map(x => x[1]), backgroundColor: IND_COLORS }],
+    { plugins: { legend: { position: 'right', labels: { color: '#CBD5E1', font: { size: 10 } } } } }
   );
 
   // SLA Doughnut
@@ -1946,16 +1925,38 @@ function renderIndImplementacion() {
   const abiertos = todos.filter(r => r._is_abierto);
   const total = todos.length;
 
-  const cumpleSLA = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'SI').length;
-  const noSLA = todos.filter(r => (r['CUMPLE SLA'] || '').toString().toUpperCase() === 'NO').length;
+  // Filtrar estrictamente a ESTADO = IMPLEMENTADO para SLA
+  const ejecutados = todos.filter(r => (r['ESTADO'] || '').toString().toUpperCase().trim() === 'IMPLEMENTADO');
+  
+  // Calcular fallas de Lineacom y Wompi
+  const fallasLC = ejecutados.filter(r => 
+    (r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'NO' &&
+    (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() === 'LINEA'
+  ).length;
+
+  const fallasWOM = ejecutados.filter(r => 
+    (r['CUMPLE SLA'] || '').toString().toUpperCase().trim() === 'NO' &&
+    ((r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() === 'LINEA' ||
+     (r['OBSERVACIÓN ESTANDAR'] || '').toString().toUpperCase().trim() === 'WOMPI')
+  ).length;
+
+  const cumpleWOM = ejecutados.length - fallasWOM;
+  const cumpleLinea = ejecutados.length - fallasLC;
+
+  const pctWOMPI = ejecutados.length ? _indPct(cumpleWOM, ejecutados.length) : '100.0%';
+  const pctLINEA = ejecutados.length ? _indPct(cumpleLinea, ejecutados.length) : '100.0%';
 
   const kpisEl = document.getElementById('ind-impl-kpis');
-  if (kpisEl) kpisEl.innerHTML =
-    _kpiCard('Total Actividades', _indFmt(total), '', '#DFFF61', '📋', 'implementacion') +
-    _kpiCard('Cerradas', _indFmt(bd.length), _indPct(bd.length, total), '#B0F2AE', '✅', 'implementacion') +
-    _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'implementacion') +
-    _kpiCard('Cumple SLA', _indFmt(cumpleSLA), _indPct(cumpleSLA, total), '#00825A', '🎯', 'implementacion') +
-    _kpiCard('Incumple SLA', _indFmt(noSLA), _indPct(noSLA, total), '#DFFF61', '⚠️', 'implementacion');
+  if (kpisEl) {
+    kpisEl.innerHTML =
+      _kpiCard('Total Actividades', _indFmt(total), '', '#DFFF61', '📋', 'implementacion') +
+      _kpiCard('Cerradas', _indFmt(bd.length), _indPct(bd.length, total), '#B0F2AE', '✅', 'implementacion') +
+      _kpiCard('Abiertas', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'implementacion') +
+      _kpiCard('Cumplimiento WOMPI', pctWOMPI, `${_indFmt(cumpleWOM)} / ${_indFmt(ejecutados.length)}`, '#00825A', '📐', 'implementacion') +
+      _kpiCard('Cumplimiento LINEACOM', pctLINEA, `${_indFmt(cumpleLinea)} / ${_indFmt(ejecutados.length)}`, '#99D1FC', '🔗', 'implementacion') +
+      _kpiCard('Fallas LINEACOM', _indFmt(fallasLC), '', '#DFFF61', '⚠️', 'implementacion') +
+      _kpiCard('Fallas WOMPI', _indFmt(fallasWOM - fallasLC), '', '#99D1FC', '⚠️', 'implementacion');
+  }
 
   // KPIs: distribución por PRIMER CAUSAL DE INCUMPLIMIENTO (Impl usa campo distinto)
   const _impl_resp = _countBy(
@@ -1965,7 +1966,6 @@ function renderIndImplementacion() {
     }),
     'PRIMER CAUSAL  DE INCUMPLIMIENTO'
   );
-  // fallback si el campo tiene un solo espacio
   const _impl_resp2 = Object.keys(_impl_resp).length ? _impl_resp : _countBy(
     todos.filter(r => {
       const v = (r['PRIMER CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
@@ -1973,19 +1973,6 @@ function renderIndImplementacion() {
     }),
     'PRIMER CAUSAL DE INCUMPLIMIENTO'
   );
-
-  if (kpisEl) {
-    const topCausalImpl = _topN(_impl_resp2, 1);
-    if (topCausalImpl.length) {
-      kpisEl.innerHTML +=
-        `<div class="ind-kpi-card" style="border-color:rgba(223,255,97,.3);">
-          <div class="ind-kpi-icon">🔍</div>
-          <div class="ind-kpi-value" style="color:#DFFF61;font-size:14px;">${topCausalImpl[0][0]}</div>
-          <div class="ind-kpi-label">Causal Incumpl. #1</div>
-          <div class="ind-kpi-sub">${_indFmt(topCausalImpl[0][1])} registros</div>
-        </div>`;
-    }
-  }
 
   // Gráfica primer causal de incumplimiento
   const causalImplTop = _topN(_impl_resp2, 8);
@@ -2001,6 +1988,50 @@ function renderIndImplementacion() {
       }
     );
   }
+
+  // Segundo Causal de Incumplimiento
+  const _impl_seg = _countBy(
+    todos.filter(r => {
+      const v = (r['SEGUNDO CAUSAL  DE INCUMPLIMIENTO'] || r['SEGUNDO CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+    }),
+    'SEGUNDO CAUSAL  DE INCUMPLIMIENTO'
+  );
+  const _impl_seg2 = Object.keys(_impl_seg).length ? _impl_seg : _countBy(
+    todos.filter(r => {
+      const v = (r['SEGUNDO CAUSAL DE INCUMPLIMIENTO'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL' && v !== 'N/A' && v !== '0';
+    }),
+    'SEGUNDO CAUSAL DE INCUMPLIMIENTO'
+  );
+  const segTop = _topN(_impl_seg2, 8);
+  if (segTop.length) {
+    _mkChart('ind-impl-chart-segundo-causal', 'bar',
+      segTop.map(x => x[0]),
+      [{ label: 'Segundo Causal Incumplimiento', data: segTop.map(x => x[1]), backgroundColor: '#99D1FC', borderRadius: 4 }],
+      { indexAxis: 'y', plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#FAFAFA', font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    );
+  }
+
+  // Responsable / Observación Estándar
+  const _impl_obs = _countBy(
+    todos.filter(r => {
+      const v = (r['OBSERVACIÓN ESTANDAR'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL';
+    }),
+    'OBSERVACIÓN ESTANDAR'
+  );
+  const obsEntries = Object.entries(_impl_obs);
+  _mkChart('ind-impl-chart-obs-estandar', 'doughnut',
+    obsEntries.map(x => x[0]),
+    [{ data: obsEntries.map(x => x[1]), backgroundColor: IND_COLORS }],
+    { plugins: { legend: { position: 'right', labels: { color: '#CBD5E1', font: { size: 10 } } } } }
+  );
 
   // Por Tipo de Solicitud
   const byTipo = _countBy(todos, 'TIPO DE SOLICITUD');
@@ -2038,9 +2069,6 @@ function renderIndImplementacion() {
   // Tabla técnicos
   const byTec = _countBy(todos.filter(r => r['TÉCNICO']), 'TÉCNICO');
   _simpleTable('ind-impl-table-tec', _topN(byTec, 8), 'Técnico', total);
-
-  // Forma de Atención: Visita Técnica vs Soporte Telefónico
-  _formaAtencionChart('ind-impl-chart-forma', todos, 'TIPO DE TRAYECTO');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -2057,38 +2085,23 @@ function renderIndIncidentes() {
   const fact = todos.filter(r => _isTrueVal(r['FACTURABLE'])).length;
   const atrib = todos.filter(r => _isTrueVal(r['ATRIBUIBLE'])).length;
 
-  const kpisEl = document.getElementById('ind-inc-kpis');
-  if (kpisEl) kpisEl.innerHTML =
-    _kpiCard('Total Incidentes', _indFmt(total), '', '#DFFF61', '🔔', 'incidentes') +
-    _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'incidentes') +
-    _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'incidentes') +
-    _kpiCard('Dentro SLA', _indFmt(sla.si), _indPct(sla.si, total), '#00825A', '🎯', 'incidentes') +
-    _kpiCard('Fuera SLA', _indFmt(sla.no), _indPct(sla.no, total), '#DFFF61', '⚠️', 'incidentes') +
-    _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'incidentes');
-
   // ── Cumplimiento ajustado (≡ DAX) ──
-  // Incidentes: SLA col = 'DENTRO DE LOS SLAS' (con S), resp col = 'RESPONSABLE DE INCUMPLIMIENTO' (con DE)
   const _INC_SLA = 'DENTRO DE LOS SLAS';
   const _INC_RESP = 'RESPONSABLE DE INCUMPLIMIENTO';
 
-  // % Cumpl Gral wompi = Cumple Gral / Recuento incidente (total, sin ajuste)
-  const _inc_cumplGral = sla.si;
-  const _inc_pctGral = _indPct(_inc_cumplGral, total);
-
-  // % Cumpl SLA Wompi Ajustado = SLA SI (sin ext) / base sin ext
   const _inc_aj = _slaAjustado(todos, _INC_SLA, _INC_RESP);
-
-  // % Cumpl Línea WOMPI = SLA SI donde LINEACOM / total LINEACOM
   const _inc_lc = _slaPorResponsable(todos, _INC_SLA, _INC_RESP, 'LINEACOM');
 
-  // % Cumpl Red WOMPI (LARED)
-  const _inc_lr = _slaPorResponsable(todos, _INC_SLA, _INC_RESP, 'LARED');
-
-  if (kpisEl) kpisEl.innerHTML +=
-    _kpiCard('% Cumpl Gral WOMPI', _inc_pctGral, `${_indFmt(_inc_cumplGral)} / ${_indFmt(total)}`, '#B0F2AE', '📊', 'incidentes') +
-    _kpiCard('% Cumpl SLA Ajustado', _inc_aj.pct, `${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)}`, '#B0F2AE', '📐', 'incidentes') +
-    _kpiCard('% Cumpl Línea (LINEACOM)', _inc_lc.pct, `${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}`, '#99D1FC', '🔗', 'incidentes') +
-    _kpiCard('% Cumpl Red (LARED)', _inc_lr.pct, `${_indFmt(_inc_lr.cumple)} / ${_indFmt(_inc_lr.base)}`, '#B0F2AE', '📡', 'incidentes');
+  const kpisEl = document.getElementById('ind-inc-kpis');
+  if (kpisEl) {
+    kpisEl.innerHTML =
+      _kpiCard('Total Incidentes', _indFmt(total), '', '#DFFF61', '🔔', 'incidentes') +
+      _kpiCard('Cerrados', _indFmt(cerrados.length), _indPct(cerrados.length, total), '#B0F2AE', '✅', 'incidentes') +
+      _kpiCard('Abiertos', _indFmt(abiertos.length), _indPct(abiertos.length, total), '#99D1FC', '🔓', 'incidentes') +
+      _kpiCard('Cumplimiento WOMPI', _inc_aj.pct, `${_indFmt(_inc_aj.cumple)} / ${_indFmt(_inc_aj.base)}`, '#00825A', '📐', 'incidentes') +
+      _kpiCard('Cumplimiento LINEACOM', _inc_lc.pct, `${_indFmt(_inc_lc.cumple)} / ${_indFmt(_inc_lc.base)}`, '#99D1FC', '🔗', 'incidentes') +
+      _kpiCard('Facturables', _indFmt(fact), _indPct(fact, total), '#99D1FC', '💰', 'incidentes');
+  }
 
   // Gráfica responsables de incumplimiento — Incidentes (campo con "DE")
   _responsableChart('ind-inc-chart-responsable', todos, 'RESPONSABLE DE INCUMPLIMIENTO', 'Responsable Incumplimiento');
@@ -2098,15 +2111,28 @@ function renderIndIncidentes() {
   const grupoTop = _topN(byGrupo, 8);
   _mkChart('ind-inc-chart-grupo', 'bar', grupoTop.map(x => x[0]),
     [{ label: 'Incidentes', data: grupoTop.map(x => x[1]), backgroundColor: IND_COLORS.slice(0, grupoTop.length) }],
-    { plugins: { legend: { display: false } } }
+    {
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const val = ctx.raw || 0;
+              const pct = total ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+              return ` ${val.toLocaleString('es-CO')} incidentes (${pct})`;
+            }
+          }
+        }
+      }
+    }
   );
 
-  // Por Categoría
-  const byCat = _countBy(todos.filter(r => r['CATEGORÍA'] || r['CATEGORIA']), 'CATEGORÍA');
-  const catEntries = _topN(byCat, 8);
-  _mkChart('ind-inc-chart-cat', 'doughnut',
-    catEntries.map(x => x[0]),
-    [{ data: catEntries.map(x => x[1]), backgroundColor: IND_COLORS }],
+  // Por Estado
+  const byEstado = _countBy(todos, 'ESTADO');
+  const estEntries = Object.entries(byEstado);
+  _mkChart('ind-inc-chart-estado', 'doughnut',
+    estEntries.map(x => x[0]),
+    [{ data: estEntries.map(x => x[1]), backgroundColor: IND_COLORS }],
     { plugins: { legend: { position: 'right', labels: { color: '#CBD5E1', font: { size: 10 } } } } }
   );
 
@@ -2117,14 +2143,40 @@ function renderIndIncidentes() {
   _trendChart('ind-inc-chart-trend', todos,
     'FECHA APERTURA DEL INCIDENTE (DD/MM/AAAA)', 'Incidentes / mes', '#99D1FC');
 
-  // Urgencia
-  const byUrg = _countBy(todos.filter(r => r['URGENCIA']), 'URGENCIA');
-  const urgEntries = Object.entries(byUrg);
-  _mkChart('ind-inc-chart-urg', 'bar',
-    urgEntries.map(x => x[0]),
-    [{ label: 'Urgencia', data: urgEntries.map(x => x[1]), backgroundColor: '#DFFF61' }],
-    { plugins: { legend: { display: false } } }
+  // Causal Inicial (Top 8)
+  const byCausalInicial = _countBy(
+    todos.filter(r => {
+      const v = (r['CAUSAL INICIAL'] || '').toString().trim();
+      return v && v !== '' && v.toUpperCase() !== 'NULL';
+    }),
+    'CAUSAL INICIAL'
   );
+  const causalInicialTop = _topN(byCausalInicial, 8);
+  if (causalInicialTop.length) {
+    _mkChart('ind-inc-chart-causal-inicial', 'bar',
+      causalInicialTop.map(x => x[0]),
+      [{ label: 'Causal Inicial', data: causalInicialTop.map(x => x[1]), backgroundColor: '#99D1FC', borderRadius: 4 }],
+      {
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                const val = ctx.raw || 0;
+                const pct = total ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+                return ` ${val.toLocaleString('es-CO')} incidentes (${pct})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#FAFAFA', font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    );
+  }
 
   // Tabla fallas
   const byFalla = _countBy(todos.filter(r => r['FALLA']), 'FALLA');
