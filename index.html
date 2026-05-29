@@ -249,6 +249,10 @@
 
 <body>
 
+  <!-- ════ GLOWING BACKGROUND ORBS ════ -->
+  <div class="dashboard-orb dashboard-orb-wompi"></div>
+  <div class="dashboard-orb dashboard-orb-linea"></div>
+  <div class="dashboard-orb dashboard-orb-mint"></div>
 
   <!-- ════ DATA LOADING OVERLAY ════ -->
   <div id="data-loading-overlay" class="hidden">
@@ -257,7 +261,7 @@
       <div class="dl-sep"></div>
       <img src="logo_linea.png" alt="Linea" style="filter:brightness(1.2);">
     </div>
-    <div class="dl-title">Cargando Dashboard...</div>
+    <div class="dl-title"><span class="wompi-gradient-text">Cargando Dashboard...</span></div>
     <div class="dl-spinner-row">
       <div class="dl-spinner"></div>
       <div class="dl-msg" id="dl-msg">Iniciando carga de datos...</div>
@@ -326,7 +330,7 @@
         <div class="login-sep-v"></div>
         <img src="logo_linea.png" alt="Linea" class="login-logo-linea">
       </div>
-      <div class="login-title">PLATAFORMA UNIFICADA DE TABLEROS</div>
+      <div class="login-title"><span class="wompi-gradient-text">PLATAFORMA UNIFICADA DE TABLEROS</span></div>
       <div class="login-desc">Acceso restringido · Wompi × Linea Comunicaciones</div>
       <div class="login-error" id="login-error" style="display:none;margin-bottom:12px;"></div>
       <button class="btn-login btn-ms-login" id="msLoginBtn" onclick="doMicrosoftLogin()">
@@ -500,7 +504,7 @@
               <div style="font-size:48px;margin-bottom:16px;">📊</div>
               <div
                 style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--blanco);letter-spacing:-.5px;margin-bottom:8px;">
-                Dashboard Unificado de Tableros</div>
+                <span class="wompi-gradient-text">Dashboard Unificado de Tableros</span></div>
             </div>
             <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
               <div onclick="selectBoard('datafonos')"
